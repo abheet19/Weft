@@ -83,6 +83,8 @@ jobs:
         with:
           version: 0.3.129
 
-      - run: flyctl deploy --remote-only
+      # --depot=false uses Fly's own Machines builder (inside Fly's network) rather than Depot, whose
+      # registry push reaches `_api.internal` — unreachable from a GitHub runner, so the Depot push 401s.
+      - run: flyctl deploy --remote-only --depot=false
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

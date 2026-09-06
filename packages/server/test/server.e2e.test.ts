@@ -472,7 +472,21 @@ describe('attack: resource exhaustion', () => {
     expect(await other.expect('pong', 10_000)).toEqual({ v: 1, t: 'pong' });
     witness.send(opsMsg([ins(replicaNo(1), 1)]));
     expect(await witness.expect('ack', 10_000)).toMatchObject({ seq: 1 });
-    expect(await other.expect('ops', 10_000)).toMatchObject({ ops: [ins(replicaNo(1), 1)] });
+    // `other` (client 499) also receives the hot client's ops that survived the rate limit — they are fanned
+    // out to everyone and legitimately precede replica 1's op, especially under Windows-CI timing. Drain 'ops'
+    // frames until the witness's op arrives, then assert client 499 got exactly that fanned-out op (unchanged:
+    // what this proves — the rate limit isolated only the hot client, and the fan-out still reaches 499).
+    const want = ins(replicaNo(1), 1);
+    const deadline = Date.now() + 10_000;
+    let fannedOut: { ops: Op[] } | undefined;
+    for (;;) {
+      const m = await other.expect('ops', Math.max(1, deadline - Date.now()));
+      if (m.ops.some((op) => op.id.replica === want.id.replica && op.id.seq === want.id.seq)) {
+        fannedOut = m;
+        break;
+      }
+    }
+    expect(fannedOut).toMatchObject({ ops: [want] });
     for (const c of clients) c.close();
   });
 });

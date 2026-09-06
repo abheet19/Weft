@@ -1,0 +1,38 @@
+// canonical.ts — the bytes two converged replicas must share. This file exists so "same
+// document" is checkable: the Inspector hashes these bytes and compares them across replicas
+// (design §3.5), and every property test asserts equality on them. The encoding is a JSON ARRAY
+// of tuples — never an object — because an object key can be dropped, reordered or shadowed by
+// a prototype without changing how it prints, and a hash that silently drops a key is the Zeno
+// bug this project exists to not repeat. It must never depend on Map iteration order (only on the
+// traversal), never include tombstones, and never include anything a user cannot see.
+
+import type { Doc } from './doc.ts';
+import { MARK_NAMES, type Item } from './item.ts';
+import { visibleItems } from './traverse.ts';
+
+/** The content half of a canonical tuple: a bare string is a char; `['break']` is a soft break (E52); `['block', …]` is a boundary — three shapes JSON tells apart. */
+type CanonicalContent = string | readonly ['break'] | readonly ['block', string, number | null];
+
+/** One visible item as a tuple: `[content, activeMarksSorted]`, plus `href` (or null) as a third element when the link mark is active. */
+type CanonicalTuple = readonly [CanonicalContent, readonly string[]] | readonly [CanonicalContent, readonly string[], string | null];
+
+function tupleOf(item: Item): CanonicalTuple {
+  const content: CanonicalContent =
+    item.content.kind === 'char' ? item.content.text : item.content.kind === 'break' ? (['break'] as const) : (['block', item.content.attrs.type, item.content.attrs.level ?? null] as const);
+  // MARK_NAMES is already in sorted order, so filtering it yields the sorted active set.
+  const marks = MARK_NAMES.filter((name) => item.marks[name]?.active === true);
+  const link = item.marks.link;
+  if (link !== undefined && link.active) return [content, marks, link.href ?? null];
+  return [content, marks];
+}
+
+/** The bytes two converged replicas must share: visible chars, active marks, block attrs — as a JSON *array* (never an object, so no key can be silently dropped; see Zeno's __proto__ lesson). Deterministic. */
+export function canonicalBytes(doc: Doc): Uint8Array<ArrayBuffer> {
+  const tuples = visibleItems(doc).map(tupleOf);
+  return new TextEncoder().encode(JSON.stringify(tuples));
+}
+
+/** The same content as a string, for tests and error messages. Equality of these strings is equality of the bytes. */
+export function canonicalString(doc: Doc): string {
+  return new TextDecoder().decode(canonicalBytes(doc));
+}

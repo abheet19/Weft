@@ -1,0 +1,1168 @@
+<title>Weft</title>
+<meta charset="utf-8">
+<!-- Artifact-compatible fragment: no doctype/html/head/body. The host supplies those; a local
+     open still works because the charset meta sits inside the first 1024 bytes. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   WEFT — prototype stylesheet. Sections are numbered so the build can port
+   them one at a time. Layering rule (03-UI.md §2.1): L0 ground · L1 opaque
+   content · L2 glass chrome. Glass appears ONLY on .glass elements.
+   ===================================================================== */
+
+/* ---------- 1. TOKENS — 03-UI.md §2.2, copied verbatim ---------- */
+:root {
+  /* ground & surfaces */
+  --bg:        oklch(15% 0.012 250);   /* dark navy-grey, never pure black */
+  --paper:     oklch(20% 0.010 250);   /* editor page */
+  --raised:    oklch(25% 0.010 250);   /* panels */
+  --line:      oklch(32% 0.012 250);
+  --ink:       oklch(94% 0.008 90);    /* warm off-white text */
+  --ink-2:     oklch(72% 0.010 250);
+  --ink-3:     oklch(56% 0.012 250);
+
+  /* one accent, plus the four state hues */
+  --accent:    oklch(78% 0.14 200);    /* teal */
+  --ok:        oklch(76% 0.15 150);    /* saved */
+  --sync:      oklch(76% 0.12 240);    /* syncing */
+  --warn:      oklch(80% 0.15 75);     /* offline / reconnecting */
+  --bad:       oklch(70% 0.19 25);     /* divergence / error */
+
+  /* glass */
+  --gl-fill:   oklch(22% 0.012 250 / .55);
+  --gl-edge:   oklch(100% 0 0 / .12);
+  --gl-spec:   oklch(100% 0 0 / .32);
+  --gl-blur:   blur(14px) saturate(1.4);
+  --gl-shadow: inset 0 1px 0 var(--gl-spec), 0 10px 30px -12px oklch(0% 0 0 / .6);
+
+  /* presence palette: 8 hues, equal L/C, 45° apart — assigned by replica id */
+  --p0: oklch(75% 0.16 20);  --p1: oklch(75% 0.16 65);  --p2: oklch(75% 0.16 110); --p3: oklch(75% 0.16 155);
+  --p4: oklch(75% 0.16 200); --p5: oklch(75% 0.16 245); --p6: oklch(75% 0.16 290); --p7: oklch(75% 0.16 335);
+
+  /* type */
+  --font-ui:   "Geist", "Inter", system-ui, sans-serif;
+  --font-doc:  "Newsreader", Georgia, serif;          /* the editor body: reads like a page */
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --fs-0: clamp(.8rem, .78rem + .1vw, .875rem);  --fs-1: clamp(.9rem, .85rem + .2vw, 1rem);
+  --fs-2: clamp(1.05rem, 1rem + .3vw, 1.2rem);   --fs-doc: clamp(1.05rem, 1rem + .35vw, 1.25rem);
+
+  /* radius, motion */
+  --r-1: 8px; --r-2: 12px; --r-3: 18px; --r-pill: 999px;
+  --t-fast: 120ms; --t-base: 220ms; --t-slow: 400ms;
+  --ease: cubic-bezier(.2,.8,.2,1);
+}
+:root[data-theme="light"] { --bg: oklch(97% 0.006 90); --paper: oklch(99.5% 0.003 90); --raised: oklch(96% 0.006 90);
+  --line: oklch(88% 0.008 90); --ink: oklch(20% 0.01 250); --ink-2: oklch(42% 0.01 250); --ink-3: oklch(58% 0.01 250);
+  --gl-fill: oklch(100% 0 0 / .55); --gl-edge: oklch(20% 0.01 250 / .10); --gl-spec: oklch(100% 0 0 / .9); }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg: oklch(97% 0.006 90); --paper: oklch(99.5% 0.003 90); --raised: oklch(96% 0.006 90);
+  --line: oklch(88% 0.008 90); --ink: oklch(20% 0.01 250); --ink-2: oklch(42% 0.01 250); --ink-3: oklch(58% 0.01 250);
+  --gl-fill: oklch(100% 0 0 / .55); --gl-edge: oklch(20% 0.01 250 / .10); --gl-spec: oklch(100% 0 0 / .9); } }
+@supports not (backdrop-filter: blur(1px)) { .glass { background: var(--raised) } }
+@media (prefers-reduced-transparency: reduce) { .glass { backdrop-filter: none; background: var(--raised) } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition-duration: 0ms !important } }
+
+/* 1b. Prototype-only additions (not in the spec; the build may keep them).
+   --gl-inner is the >=60%-alpha inner fill every text label inside glass sits on (§2.1). */
+:root { --gl-inner: oklch(19% 0.012 250 / .68); --on-hue: oklch(15% 0.02 250);
+        --proto-h: 36px; --top-h: 52px; --rail-w: 328px; color-scheme: dark; }
+:root[data-theme="light"] { --gl-inner: oklch(100% 0 0 / .74); color-scheme: light; }
+/* Manual "Reduce transparency" (⌘K) — prefers-reduced-transparency is not Baseline yet */
+:root[data-flat="1"] .glass { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--raised); }
+:root[data-flat="1"] .blob { display: none }
+
+/* ---------- 2. RESET & BASE ---------- */
+*, *::before, *::after { box-sizing: border-box }
+html, body { margin: 0; height: 100% }
+html { scroll-padding-top: calc(var(--proto-h) + var(--top-h) + 32px); background: var(--bg) }
+body { background: var(--bg) }
+/* #weft-app is the app root (what used to be the document body). isolation: isolate gives the fixed L0 ground a
+   stacking context to sit at z -1 in, so it paints above the host's body background and below content. */
+#weft-app { position: relative; isolation: isolate; padding-top: var(--proto-h); min-height: 100vh; color: var(--ink);
+  font: 400 var(--fs-1)/1.5 var(--font-ui); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; border-radius: var(--r-1) }
+a { color: inherit; text-decoration: none }
+h1, h2, h3, p { margin: 0 }
+kbd { font: 500 11px/1 var(--font-mono); padding: 3px 5px; border-radius: 5px; border: 1px solid var(--line); color: var(--ink-3); background: var(--paper) }
+.mono, .num { font-variant-numeric: tabular-nums }
+.mono { font-family: var(--font-mono) }
+.grow { flex: 1 1 auto; min-width: 0 }
+[hidden] { display: none !important }
+.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex: none }
+
+/* ---------- 3. L0 GROUND — ambient drift, 46 s loop (§5) ---------- */
+.ground { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background: var(--bg) }
+.blob { position: absolute; width: 52vmax; height: 52vmax; border-radius: 50%; filter: blur(36px); opacity: .95;
+  animation: drift 46s var(--ease) infinite alternate; will-change: transform }
+.b1 { left: -10vmax; top: -16vmax; background: radial-gradient(closest-side, oklch(62% .13 200 / .72), transparent 72%) }
+.b2 { right: -14vmax; top: 4vh; background: radial-gradient(closest-side, oklch(66% .14 65 / .6), transparent 72%); animation-delay: -15s }
+.b3 { left: 26vw; bottom: -28vmax; background: radial-gradient(closest-side, oklch(58% .14 290 / .66), transparent 72%); animation-delay: -31s }
+:root[data-theme="light"] .blob { opacity: .8 }
+@keyframes drift { from { transform: translate3d(0,0,0) scale(1) } to { transform: translate3d(7vw,6vh,0) scale(1.14) } }
+
+/* ---------- 4. L2 GLASS — the one recipe (§2.3), reused never re-invented ---------- */
+.glass { background: var(--gl-fill); backdrop-filter: var(--gl-blur); -webkit-backdrop-filter: var(--gl-blur);
+  border: 1px solid var(--gl-edge); box-shadow: var(--gl-shadow); border-radius: var(--r-3); isolation: isolate; }
+.glass::before { /* specular seam */ content:""; position:absolute; inset:0 0 auto; height:1px;
+  background: linear-gradient(90deg, transparent, var(--gl-spec) 25%, var(--gl-spec) 75%, transparent); opacity:.6; }
+.glass { position: relative; overflow: hidden } /* the seam is clipped to the rounded pane */
+/* Inner fill: text never sits on raw glass */
+.inner, .gbtn { background: var(--gl-inner); border-radius: var(--r-1) }
+.gbtn { height: 32px; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px; color: var(--ink); font-size: 13px; font-weight: 500;
+  transition: background var(--t-fast) }
+.gbtn:hover { background: color-mix(in oklch, var(--gl-inner), var(--ink) 9%) }
+.gbtn.icon { width: 32px; padding: 0; justify-content: center }
+
+/* ---------- 5. PROTOTYPE SCENE BAR — not part of the product ---------- */
+.proto { position: fixed; top: 0; left: 0; right: 0; height: var(--proto-h); z-index: 60; display: flex; align-items: center; gap: 4px;
+  padding: 0 12px; background: oklch(11% .01 250); color: oklch(82% .01 250); font-size: 12px; border-bottom: 1px solid oklch(100% 0 0 / .08); overflow-x: auto }
+.proto .tag { display: flex; align-items: center; gap: 6px; margin-right: 8px; font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: oklch(66% .02 250); white-space: nowrap }
+.proto .tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--warn) }
+.proto button { height: 24px; padding: 0 9px; border-radius: 6px; font-size: 12px; font-weight: 500; border: 1px solid transparent; white-space: nowrap; color: inherit }
+.proto button:hover { background: oklch(100% 0 0 / .08) }
+.proto button[aria-pressed="true"] { background: oklch(100% 0 0 / .15); border-color: oklch(100% 0 0 / .14); color: #fff }
+.proto .sep { width: 1px; height: 16px; background: oklch(100% 0 0 / .14); margin: 0 6px; flex: none }
+.proto .lbl { color: oklch(60% .01 250); margin: 0 2px 0 4px }
+.proto #pb-map { border-color: oklch(100% 0 0 / .22); margin-right: 4px }
+
+/* ---------- 5b. PROTOTYPE FLOW MAP — every screen, every flow. Not part of the product.
+   Like the scene bar it uses fixed prototype colours; the thumbnails inside use the product tokens. ---------- */
+.map { position: fixed; inset: var(--proto-h) 0 0 0; z-index: 58; overflow-y: auto; scrollbar-width: thin; color: oklch(84% .01 250);
+  font-family: var(--font-ui); font-size: 13px; background: oklch(11% .01 250) }
+/* The map is prototype chrome, so it is fully opaque and has NO backdrop-filter on purpose: a backdrop blur
+   over the ground's `filter: blur` blobs made Chromium drop the blob blur and paint a hard grey ellipse. */
+.map-in { max-width: 1240px; margin: 0 auto; padding: 28px 24px 72px }
+.map-top { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 24px }
+.map-top h2 { font-size: 20px; font-weight: 600; letter-spacing: -.01em; color: #fff }
+.map-top p { margin-top: 4px; color: oklch(66% .01 250); max-width: 64ch; line-height: 1.5 }
+.map-top .grow { flex: 1 }
+.map-x { height: 30px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid oklch(100% 0 0 / .18); border-radius: 7px; color: #fff; font-size: 12px; font-weight: 500; white-space: nowrap }
+.map-x:hover { background: oklch(100% 0 0 / .08) }
+.map-sec { display: flex; align-items: baseline; gap: 8px; margin: 26px 0 12px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: oklch(66% .02 250) }
+.map-sec span { font-family: var(--font-mono); font-weight: 500; letter-spacing: 0; color: oklch(50% .01 250) }
+.map-sec small { font-weight: 400; letter-spacing: 0; text-transform: none; color: oklch(50% .01 250); margin-left: auto }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 14px }
+.card { display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 8px; border-radius: 10px; border: 1px solid oklch(100% 0 0 / .08); background: oklch(14% .01 250); color: inherit;
+  transition: border-color var(--t-fast), transform var(--t-fast) var(--ease) }
+.card:hover { border-color: oklch(100% 0 0 / .3); transform: translateY(-1px) }
+.card b { font-size: 12.5px; font-weight: 600; color: #fff; display: block; margin-top: 2px } .card span { font-size: 11.5px; color: oklch(62% .01 250); line-height: 1.35 }
+/* Thumbnails: a CSS mini-rendering of each screen. Colours come from the product tokens so they follow the theme;
+   .light and .flat force their own variant. */
+.th { position: relative; width: 100%; aspect-ratio: 16/10; border-radius: 6px; overflow: hidden; background: var(--bg); border: 1px solid var(--line); isolation: isolate }
+.th.light { --bg: oklch(97% 0.006 90); --paper: oklch(99.5% 0.003 90); --raised: oklch(96% 0.006 90); --line: oklch(88% 0.008 90);
+  --ink: oklch(20% 0.01 250); --ink-2: oklch(42% 0.01 250); --ink-3: oklch(58% 0.01 250); --gl-fill: oklch(100% 0 0 / .55); --gl-edge: oklch(20% 0.01 250 / .10) }
+.th::before { content: ""; position: absolute; inset: -30%; z-index: -1; background:
+  radial-gradient(closest-side at 22% 12%, oklch(62% .13 200 / .55), transparent 70%),
+  radial-gradient(closest-side at 86% 34%, oklch(66% .14 65 / .45), transparent 70%),
+  radial-gradient(closest-side at 50% 108%, oklch(58% .14 290 / .5), transparent 70%) }
+.th.flat::before { display: none }
+.th > * { position: absolute }
+.th-top { left: 5%; right: 5%; top: 6%; height: 10%; border-radius: 3px; background: var(--gl-fill); border: 1px solid var(--gl-edge) }
+.th.flat .th-top, .th.flat .th-pill, .th.flat .th-pop { background: var(--raised) }
+.th-top::before { content: ""; position: absolute; left: 5px; top: 35%; width: 14px; height: 30%; border-radius: 2px; background: var(--accent); opacity: .8 }
+.th-pres { right: 8%; top: 8%; height: 6%; display: flex; gap: 2px; align-items: center }
+.th-pres i { width: 6px; height: 6px; border-radius: 50%; background: var(--hue) }
+.th-pres i.g { background: transparent; border: 1px dashed var(--ink-3) }
+.th-page { left: 11%; right: 31%; top: 24%; bottom: -2px; padding: 9% 9% 0; background: var(--paper); border: 1px solid var(--line); border-radius: 4px 4px 0 0 }
+.th.norail .th-page { left: 20%; right: 20% }
+.th-page i { display: block; height: 2px; margin: 0 0 4px; border-radius: 1px; background: var(--ink-2); opacity: .55 }
+.th-page i.h { height: 4px; width: 46%; margin-bottom: 6px; background: var(--ink); opacity: .9 }
+.th-page i:nth-child(3) { width: 92% } .th-page i:nth-child(4) { width: 70% } .th-page i:nth-child(5) { width: 84% } .th-page i:nth-child(6) { width: 40% }
+.th-page.skel i { opacity: .22; height: 3px } .th-page.skel i.h { display: none }
+.th-page.empty i { display: none } .th-page.empty::after { content: ""; position: absolute; left: 9%; top: 18%; width: 40%; height: 2px; background: var(--ink-3); opacity: .5 }
+.th-page.error i { display: none }
+.th-page.tt i:nth-child(n+5) { display: none } .th-page.tt i:nth-child(4) { width: 34%; box-shadow: 2px 0 0 var(--accent) }
+.th-page.follow { outline: 1.5px solid var(--p1); outline-offset: -1px }
+.th-err { left: 19%; right: 39%; top: 44%; height: 26%; border-radius: 3px; background: var(--raised); border: 1px solid color-mix(in oklch, var(--bad) 60%, var(--line)) }
+.th-err::before { content: ""; position: absolute; left: 8%; top: 20%; width: 36%; height: 2px; background: var(--bad) }
+.th-err::after { content: ""; position: absolute; left: 8%; bottom: 18%; width: 22%; height: 4px; border-radius: 1px; background: var(--accent) }
+.th-caret { width: 1.5px; height: 4%; background: var(--hue) } .th-caret::before { content: ""; position: absolute; left: 0; bottom: 100%; width: 6px; height: 3px; background: var(--hue); border-radius: 1px 1px 1px 0 }
+.th-sel { height: 3px; border-radius: 1px; background: color-mix(in oklch, var(--accent) 45%, transparent) }
+.th-rail { right: 5%; top: 24%; width: 22%; bottom: -2px; display: grid; gap: 3px; align-content: start }
+.th-rail i { height: 13%; border-radius: 2px; background: var(--raised); border: 1px solid var(--line); border-left: 2px solid var(--p4) }
+.th-rail i:nth-child(2) { border-left-color: var(--p1) } .th-rail i:nth-child(3) { border-left-color: var(--p6) }
+.th-rail i.f { border-left-color: var(--hue); background: color-mix(in oklch, var(--hue) 20%, var(--raised)) }
+.th-rail i.sl { position: relative; border-left: 1px solid var(--line) } .th-rail i.sl::after { content: ""; position: absolute; left: 10%; right: 10%; top: 50%; height: 1.5px; background: linear-gradient(90deg, var(--accent) 60%, var(--line) 0) }
+.th.hi .th-rail { outline: 1.5px solid var(--accent); outline-offset: 2px; border-radius: 2px }
+.th-strip { left: 11%; right: 31%; top: 18%; height: 5%; border-radius: 2px; background: var(--raised); border: 1px solid var(--line); border-left: 2px solid var(--hue) }
+.th.norail .th-strip { left: 20%; right: 20% }
+.th-pill { left: 5%; bottom: 6%; height: 9%; width: 22%; border-radius: 99px; background: var(--gl-fill); border: 1px solid var(--gl-edge) }
+.th-pill.wide { width: 46% }
+.th-pill::before { content: ""; position: absolute; left: 4px; top: 50%; width: 4px; height: 4px; margin-top: -2px; border-radius: 50%; background: var(--hue); box-shadow: 0 0 0 1.5px color-mix(in oklch, var(--hue) 25%, transparent) }
+.th-pill::after { content: ""; position: absolute; left: 12px; right: 6px; top: 50%; height: 2px; margin-top: -1px; border-radius: 1px; background: var(--ink-2); opacity: .7 }
+.th-pop { border-radius: 4px; background: var(--gl-fill); border: 1px solid var(--gl-edge) }
+.th-pop::before { content: ""; position: absolute; inset: 3px; border-radius: 3px; background: color-mix(in oklch, var(--paper) 70%, transparent) }
+.th-pop--k { left: 22%; right: 22%; top: 20%; height: 44% } .th-pop--pres { right: 6%; top: 20%; width: 34%; height: 40% }
+.th-pop--pill { left: 5%; bottom: 18%; width: 36%; height: 32% } .th-pop--fmt { left: 24%; top: 34%; width: 34%; height: 9%; border-radius: 3px }
+.th-pop--fmt::before { display: none } .th-pop--fmt::after { content: ""; position: absolute; left: 3px; top: 3px; bottom: 3px; width: 6px; border-radius: 2px; background: var(--ink) }
+/* Flows as horizontal steppers */
+.flow { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 20px; align-items: start; padding: 14px 0; border-top: 1px solid oklch(100% 0 0 / .08) }
+.flow-h { display: flex; flex-direction: column; gap: 6px; align-items: flex-start }
+.flow-h .fid { font: 500 11px var(--font-mono); color: oklch(56% .01 250) } .flow-h b { font-size: 13px; font-weight: 600; color: #fff; line-height: 1.35 }
+.flow-h .play { height: 26px; padding: 0 10px 0 8px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid oklch(100% 0 0 / .18); border-radius: 6px; color: #fff; font-size: 12px; font-weight: 500 }
+.flow-h .play:hover { background: oklch(100% 0 0 / .08); border-color: var(--accent) } .flow-h .play .i { width: 14px; height: 14px; color: var(--accent) }
+.steps { display: flex; list-style: none; margin: 0; padding: 2px 0 6px; overflow-x: auto; scrollbar-width: thin }
+.steps li { position: relative; flex: 1 1 120px; min-width: 120px; max-width: 260px; padding-right: 14px }
+.steps li:not(:last-child)::after { content: ""; position: absolute; top: 11px; left: 28px; right: 6px; height: 1px; background: oklch(100% 0 0 / .18) }
+.steps button { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 7px; width: 100%; text-align: left; color: oklch(78% .01 250); font-size: 12px; line-height: 1.35; border-radius: 6px; padding: 0 4px 4px 0 }
+.steps .n { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 600 11px var(--font-mono); color: #fff; background: oklch(18% .01 250); border: 1px solid oklch(100% 0 0 / .22) }
+.steps button:hover { color: #fff } .steps button:hover .n { border-color: var(--accent); color: var(--accent) }
+.steps li[aria-current="step"] .n { background: var(--accent); color: var(--on-hue); border-color: transparent }
+@media (max-width: 760px) { .flow { grid-template-columns: 1fr } .map-top { flex-wrap: wrap } }
+
+/* ---------- 5c. PROTOTYPE FLOW BAR — fixed bottom-right while a flow is active ---------- */
+.flowbar { position: fixed; right: 20px; bottom: 20px; z-index: 55; width: min(540px, calc(100vw - 40px)); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center;
+  padding: 10px 10px 10px 14px; border-radius: 12px; background: oklch(11% .01 250); color: oklch(84% .01 250); border: 1px solid oklch(100% 0 0 / .12);
+  box-shadow: 0 14px 40px -16px oklch(0% 0 0 / .7); font-family: var(--font-ui); font-size: 12px; animation: rise var(--t-base) var(--ease) }
+.fb-tag { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 11px; letter-spacing: .04em; color: oklch(62% .01 250); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.fb-tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); flex: none }
+.fb-tag b { color: #fff; font-weight: 600 } .fb-tag .mono { color: oklch(84% .01 250) }
+.fb-cap { grid-column: 1; color: oklch(84% .01 250); line-height: 1.45 } .fb-cap b { color: #fff; font-weight: 600 }
+.fb-ctl { grid-column: 2; grid-row: 1 / span 2; display: flex; gap: 4px; align-items: center }
+.flowbar button { height: 28px; padding: 0 10px; border-radius: 6px; border: 1px solid oklch(100% 0 0 / .14); color: #fff; font-size: 12px; font-weight: 500; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px }
+.flowbar button:hover { background: oklch(100% 0 0 / .08) } .flowbar button[disabled] { opacity: .35; cursor: default; background: none }
+.flowbar button.icon { width: 28px; padding: 0; justify-content: center; border-color: transparent }
+.flowbar #fb-next { background: var(--accent); color: var(--on-hue); border-color: transparent } .flowbar #fb-next:hover { background: color-mix(in oklch, var(--accent), white 10%) }
+.flow-on .rail { max-height: calc(100vh - var(--proto-h) - var(--top-h) - 150px) }
+/* F4 interstitial: the tab was killed */
+.killed { position: fixed; inset: var(--proto-h) 0 0 0; z-index: 45; display: grid; place-items: center; text-align: center; background: oklch(11% .01 250); color: oklch(84% .01 250); font-family: var(--font-ui) }
+.killed b { display: block; font-size: 18px; font-weight: 600; color: #fff; margin-bottom: 8px } .killed p { max-width: 46ch; line-height: 1.5; color: oklch(66% .01 250) }
+/* Flow attention pulse — prototype only, used to point at a control */
+.pulse { animation: pulse 1.4s var(--ease) 2 } @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent) 0%, transparent) } 40% { box-shadow: 0 0 0 4px color-mix(in oklch, var(--accent) 55%, transparent) } }
+
+/* ---------- 6. TOP BAR (glass) ---------- */
+.topbar { position: sticky; top: calc(var(--proto-h) + 12px); z-index: 20; margin: 12px 24px 0; height: var(--top-h);
+  display: flex; align-items: center; gap: 8px; padding: 0 10px }
+.brand { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px 0 8px; font-weight: 600; letter-spacing: -.01em; color: var(--ink) }
+.brand .i { color: var(--accent) }
+.title { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; font-size: 13px; font-weight: 500; color: var(--ink); max-width: 40vw }
+.title #title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.title .docid { font-size: 11px; color: var(--ink-3) }
+.kbd { font: 500 11px/1 var(--font-mono); padding: 2px 5px; border-radius: 4px; border: 1px solid var(--gl-edge); color: var(--ink-2) }
+
+/* ---------- 7. PRESENCE (§4.2) ---------- */
+.pres { padding: 0 10px 0 4px; gap: 8px }
+.stack { display: inline-flex; align-items: center }
+.av { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  background: var(--hue); color: var(--on-hue); font: 600 11px/1 var(--font-ui); box-shadow: 0 0 0 2px var(--raised) }
+.stack .av + .av { margin-left: -7px }
+.av.idle { opacity: .45 }
+.av.ghost { background: transparent; border: 1.5px dashed var(--ink-3); color: var(--ink-3); box-shadow: none }
+.av.ghost .i { width: 14px; height: 14px }
+.pres-label { font-size: 12.5px; color: var(--ink-2); white-space: nowrap }
+.person { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line) }
+.person:first-child { border-top: 0 }
+.person .who { flex: 1; min-width: 0 } .person .who b { font-weight: 500; display: block } .person .who span { font-size: 12px; color: var(--ink-3) }
+
+/* ---------- 8. SHELL LAYOUT — editor column + side rail (§3) ---------- */
+.shell { display: grid; grid-template-columns: minmax(0,1fr) var(--rail-w); gap: 24px; align-items: start;
+  max-width: 1440px; margin: 0 auto; padding: 24px 24px 128px; transition: grid-template-columns var(--t-slow) var(--ease) }
+.shell.rail-closed { grid-template-columns: minmax(0,1fr) 0; gap: 0 }
+.col { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 16px }
+.rail { position: sticky; top: calc(var(--proto-h) + var(--top-h) + 36px); width: var(--rail-w); display: flex; flex-direction: column; gap: 12px;
+  max-height: calc(100vh - var(--proto-h) - var(--top-h) - 60px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line) transparent; padding: 1px;
+  font-size: var(--fs-0); transition: opacity var(--t-slow) var(--ease), transform var(--t-slow) var(--ease) }
+.panel { flex: none }
+.rail-closed .rail { opacity: 0; transform: translateX(24px); pointer-events: none }
+@media (max-width: 1000px) { .shell { grid-template-columns: minmax(0,1fr) } .rail { position: static; width: 100% } }
+
+/* ---------- 9. INLINE NOTICE STRIP — opaque, above the editor, not a toast (§4.7) ---------- */
+.notice { width: 100%; max-width: calc(68ch * 1.28 + 128px); display: flex; align-items: center; gap: 12px; padding: 9px 8px 9px 14px;
+  background: var(--raised); border: 1px solid var(--line); border-left: 3px solid var(--hue); border-radius: var(--r-1); font-size: var(--fs-0) }
+.notice .i { color: var(--hue) }
+.notice.in { animation: rise var(--t-base) var(--ease) }
+@keyframes rise { from { opacity: 0; transform: translateY(-6px) } }
+.xbtn { width: 28px; height: 28px; display: grid; place-items: center; color: var(--ink-3) } .xbtn:hover { color: var(--ink); background: var(--paper) }
+
+/* ---------- 10. EDITOR PAGE (L1, opaque) & document typography ---------- */
+.page { position: relative; width: 100%; max-width: calc(68ch + 128px); min-height: 72vh; padding: 56px 64px 112px;
+  font-family: var(--font-doc); font-size: var(--fs-doc); background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-2);
+  box-shadow: inset 0 1px 0 oklch(100% 0 0 / .04), 0 24px 60px -40px oklch(0% 0 0 / .5) }
+.page.following { box-shadow: inset 0 0 0 2px var(--follow) }
+.follow-tag { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); font: 500 12px/1 var(--font-ui); color: var(--on-hue);
+  background: var(--follow); padding: 5px 10px; border-radius: var(--r-pill) } .follow-tag b { font-weight: 600 }
+.doc { color: var(--ink); line-height: 1.6; outline: none; caret-color: var(--accent); font-variant-numeric: oldstyle-nums }
+.doc h1 { font-weight: 500; font-size: 2.3em; line-height: 1.12; letter-spacing: -.015em; margin: 0 0 .55em }
+.doc p, .doc ul, .doc blockquote { margin: 0 0 1em }
+.doc ul { padding-left: 1.3em } .doc li { margin: .3em 0 } .doc li::marker { color: var(--ink-3) }
+.doc blockquote { padding: .15em 0 .15em 1.1em; border-left: 2px solid var(--accent); color: var(--ink-2); font-style: italic }
+.doc code { font-family: var(--font-mono); font-size: .78em; padding: .08em .35em; border-radius: 4px; border: 1px solid var(--line);
+  background: color-mix(in oklch, var(--raised), var(--ink) 4%); font-style: normal }
+.doc strong { font-weight: 600 } .doc em { font-style: italic }
+.doc ::selection { background: color-mix(in oklch, var(--accent) 30%, transparent) }
+/* local selection (static, so the format bar has something to float over) */
+.lsel { background: color-mix(in oklch, var(--accent) 28%, transparent); border-radius: 2px; box-decoration-break: clone; -webkit-box-decoration-break: clone }
+.lsel.bolded { font-weight: 600 }
+/* op-log word tokens; .gone = not yet typed at the current time-travel position */
+.w.gone { display: none }
+.tt .w.tail { box-shadow: 2px 0 0 var(--accent) }
+.page.tt .doc { color: var(--ink-2) }
+/* "Show authors" overlay: per-author underline in the replica hue */
+.doc[data-author-view="1"] .w { box-shadow: inset 0 -2px 0 color-mix(in oklch, var(--au) 65%, transparent) }
+[data-author="a"] { --au: var(--p4) } [data-author="b"] { --au: var(--p1) } [data-author="c"] { --au: var(--p6) }
+
+/* ---------- 11. REMOTE CARETS & SELECTIONS (§4.3) ---------- */
+.rcaret { position: absolute; width: 2px; border-radius: 1px; background: var(--hue); z-index: 2;
+  transition: left var(--t-base) var(--ease), top var(--t-base) var(--ease), height var(--t-base) var(--ease), opacity var(--t-slow) }
+.rcaret::after { content: ""; position: absolute; inset: -4px -6px } /* hover target */
+.rcaret.idle { opacity: .4 }
+.rcaret.off { opacity: 0; pointer-events: none }
+.rcaret .flag { position: absolute; left: -1px; bottom: 100%; margin-bottom: 1px; padding: 3px 6px; border-radius: 3px 3px 3px 0;
+  background: var(--hue); color: var(--on-hue); font: 600 12px/1 var(--font-ui); white-space: nowrap;
+  opacity: 0; transform: translateY(3px); transition: opacity var(--t-fast), transform var(--t-fast) var(--ease) }
+.rcaret.moved .flag, .rcaret:hover .flag, .following .rcaret .flag { opacity: 1; transform: none }
+.rsel { background: color-mix(in oklch, var(--hue) 25%, transparent); color: inherit; border-radius: 2px; box-decoration-break: clone; -webkit-box-decoration-break: clone }
+.page.no-peers .rsel { background: transparent }
+
+/* ---------- 12. FLOATING FORMAT BAR (glass, transient, §4.4) ---------- */
+.fmt { position: absolute; z-index: 30; display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: var(--r-2); font-family: var(--font-ui);
+  animation: rise var(--t-fast) var(--ease) }
+.fmt button { height: 30px; min-width: 30px; padding: 0 7px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  background: var(--gl-inner); color: var(--ink); font-size: 13px; font-weight: 600; transition: background var(--t-fast) }
+.fmt button:hover { background: color-mix(in oklch, var(--gl-inner), var(--ink) 9%) }
+.fmt button[aria-pressed="true"] { color: var(--accent); box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--accent) 45%, transparent) }
+.fmt button[disabled] { opacity: .4; cursor: default }
+.fmt .sep { width: 1px; height: 18px; background: var(--gl-edge); margin: 0 4px }
+.fmt b { font-weight: 700 } .fmt i { font-style: italic; font-family: var(--font-doc); font-size: 15px }
+
+/* ---------- 13. SIDE RAIL — Sync Inspector, chaos, history (L1, opaque; §4.5–4.6) ---------- */
+.panel { background: var(--raised); border: 1px solid var(--line); border-radius: var(--r-2); padding: 12px 14px 14px }
+.panel-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px }
+.panel-h h2 { font-size: 11.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-2) }
+.panel-h .sub { font-size: 11.5px; color: var(--ink-3) }
+.lane { padding: 8px 10px 9px 11px; margin-bottom: 6px; background: var(--paper); border: 1px solid var(--line); border-left: 3px solid var(--hue); border-radius: var(--r-1);
+  transition: opacity var(--t-base) }
+.lane.stale { opacity: .62 }
+.lane.flash { animation: flash 1.2s var(--ease) }
+@keyframes flash { 0%, 30% { box-shadow: 0 0 0 2px var(--accent) } }
+.lane-h { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; font-size: 12px }
+.lane-id { font-weight: 600; color: var(--hue); font-size: 12px }
+.lane-name { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis } .lane-meta { color: var(--ink-3) }
+.lane-hash { margin-left: auto; font-size: 11px; color: var(--ink-3); flex: none }
+.lane-hash.bad { color: var(--bad) }
+.lane-hash.ok { color: var(--ok) } /* converged: the server's message carried matching hashes */
+.chips { display: flex; flex-wrap: wrap; gap: 4px }
+.chips-l { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); margin: 7px 0 4px }
+.chip { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 11px; line-height: 1.45; padding: 1px 6px; border-radius: 5px;
+  background: var(--raised); border: 1px solid var(--line); color: var(--ink-2) }
+.chip.op { color: var(--hue); background: color-mix(in oklch, var(--hue) 12%, transparent); border-color: color-mix(in oklch, var(--hue) 30%, transparent) }
+.lane-empty { padding: 10px 12px; border: 1px dashed var(--line); border-radius: var(--r-1); color: var(--ink-3); font-size: 12px; margin-bottom: 8px }
+.insp-foot { display: flex; align-items: center; gap: 8px; padding: 7px 10px; margin-top: 2px; border-radius: var(--r-1);
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 12px; color: var(--hue);
+  background: color-mix(in oklch, var(--hue) 12%, transparent); border: 1px solid color-mix(in oklch, var(--hue) 30%, transparent); transition: color var(--t-base), background var(--t-base) }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); color: var(--ink) }
+.row:first-of-type { border-top: 0; padding-top: 2px }
+.row .desc { display: block; font-size: 11px; color: var(--ink-3) }
+.switch { width: 36px; height: 20px; flex: none; border-radius: var(--r-pill); background: var(--line); position: relative; transition: background var(--t-fast) }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--ink); transition: transform var(--t-fast) var(--ease), background var(--t-fast) }
+.switch[aria-checked="true"] { background: var(--accent) } .switch[aria-checked="true"]::after { transform: translateX(16px); background: var(--on-hue) }
+.stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: var(--r-1); overflow: hidden; background: var(--paper) }
+.stepper button { width: 26px; height: 26px; display: grid; place-items: center; color: var(--ink-2); border-radius: 0 } .stepper button:hover { background: var(--raised) }
+.stepper output { min-width: 26px; text-align: center; font: 500 12px/1 var(--font-mono); font-variant-numeric: tabular-nums }
+.btn { height: 28px; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--paper); font-size: 12px; font-weight: 500; white-space: nowrap; transition: border-color var(--t-fast), background var(--t-fast) }
+.btn:hover { border-color: var(--ink-3) }
+.btn.primary { background: var(--accent); color: var(--on-hue); border-color: transparent } .btn.primary:hover { background: color-mix(in oklch, var(--accent), white 10%) }
+.btn.armed { border-color: var(--sync); color: var(--sync) }
+#drop-arm { min-width: 62px; justify-content: center }
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 20px; margin: 6px 0 4px; background: none; cursor: pointer }
+input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--accent) var(--fill, 100%), var(--line) 0) }
+input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--line) }
+input[type="range"]::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--accent) }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px; border-radius: 50%; background: var(--ink); border: 2px solid var(--paper); box-shadow: 0 1px 4px oklch(0% 0 0 / .4) }
+input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--ink); border: 2px solid var(--paper) }
+.hist-meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--ink-2); font-size: 12px }
+.chk { display: inline-flex; align-items: center; gap: 6px; cursor: pointer } .chk input { accent-color: var(--accent); margin: 0; width: 14px; height: 14px }
+.hint { margin-top: 10px; font-size: 11.5px; line-height: 1.5; color: var(--ink-3) } .hint code { font-family: var(--font-mono); font-size: 11px }
+
+/* ---------- 14. STATUS PILL (glass, bottom-left, §4.1) + POPOVERS (glass) ---------- */
+.pill { position: fixed; left: 20px; bottom: 20px; z-index: 30; padding: 3px; border-radius: var(--r-pill); font-family: var(--font-ui) }
+.pill .in { height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 10px 0 10px; border-radius: var(--r-pill); background: var(--gl-inner);
+  font-size: 13px; font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; transition: opacity var(--t-base) var(--ease), transform var(--t-base) var(--ease) }
+.pill .in.swap { opacity: 0; transform: translateY(3px) }
+.pill .in:hover { background: color-mix(in oklch, var(--gl-inner), var(--ink) 9%) }
+.pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--hue); box-shadow: 0 0 0 3px color-mix(in oklch, var(--hue) 22%, transparent); transition: background var(--t-base) }
+.pill .i { color: var(--hue); margin-left: 2px } .pill .suffix { color: var(--warn) }
+.pop { position: fixed; z-index: 40; width: 312px; padding: 6px; border-radius: var(--r-2); font-family: var(--font-ui); font-size: var(--fs-0); animation: rise var(--t-fast) var(--ease) }
+.pop .in { background: var(--gl-inner); border-radius: var(--r-1); padding: 10px 12px }
+.pop h3 { font-size: 12px; font-weight: 600; color: var(--ink-2); margin-bottom: 4px }
+.pop p { color: var(--ink); line-height: 1.45 }
+.pop .hash { display: grid; gap: 3px; margin-top: 8px; font-family: var(--font-mono); font-size: 11px; color: var(--ink-2) } .pop .hash b { font-weight: 500; color: var(--bad) }
+.pop .btn { margin-top: 10px }
+
+/* ---------- 15. ⌘K DIALOG (glass, real <dialog>, §4.8) ---------- */
+.cmdk { position: fixed; inset: 0; margin: 15vh auto auto; width: min(560px, calc(100vw - 32px)); max-height: none; padding: 8px; border-radius: var(--r-3); color: var(--ink); font-family: var(--font-ui) }
+.cmdk[open] { animation: pop var(--t-base) var(--ease) }
+@keyframes pop { from { opacity: 0; transform: translateY(-8px) scale(.985) } }
+.cmdk::backdrop { background: oklch(0% 0 0 / .38) }
+.k-search { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; background: var(--gl-inner); border-radius: var(--r-2); color: var(--ink-3) }
+.k-search input { flex: 1; min-width: 0; background: none; border: 0; outline: none; color: var(--ink); font: inherit; font-size: 15px }
+.k-search input::placeholder { color: var(--ink-3) }
+.k-list { margin-top: 6px; max-height: 52vh; overflow: auto; padding: 6px; background: var(--gl-inner); border-radius: var(--r-2) }
+.k-g { padding: 8px 10px 4px; font-size: 10.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3) }
+.k-it { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: var(--r-1); cursor: pointer; color: var(--ink) }
+.k-it .i { color: var(--ink-2) } .k-it .val { margin-left: auto; font-size: 12px; color: var(--ink-3) } .k-it kbd { margin-left: auto }
+.k-it .val + kbd { margin-left: 0 }
+.k-it[aria-selected="true"] { background: color-mix(in oklch, var(--accent) 16%, transparent) } .k-it[aria-selected="true"] .i { color: var(--accent) }
+.k-empty { padding: 20px; text-align: center; color: var(--ink-3) }
+.k-foot { display: flex; gap: 14px; padding: 8px 10px 2px; font-size: 11px; color: var(--ink-3) } .k-foot kbd { margin-right: 4px }
+
+/* ---------- 16. LOADING / EMPTY / ERROR — three different things (§4.9) ---------- */
+.page[data-mode]:not([data-mode="doc"]) .doc, .page[data-mode]:not([data-mode="doc"]) .rcaret, .page[data-mode]:not([data-mode="doc"]) .fmt { display: none }
+.skel, .ghost, .err { display: none }
+.page[data-mode="loading"] .skel { display: block } .page[data-mode="empty"] .ghost { display: block } .page[data-mode="error"] .err { display: block }
+.skel i { display: block; height: 1em; margin: 0 0 1.05em; border-radius: 6px; background: linear-gradient(90deg, var(--raised) 25%, color-mix(in oklch, var(--raised), var(--ink) 7%) 50%, var(--raised) 75%); background-size: 200% 100%; animation: shimmer 1.6s linear infinite }
+.skel i:nth-child(1) { width: 78% } .skel i:nth-child(2) { width: 94% } .skel i:nth-child(3) { width: 58% }
+@keyframes shimmer { to { background-position: -200% 0 } }
+.ghost { color: var(--ink-3); font-style: italic }
+.err { padding: 16px; font-family: var(--font-ui); font-size: var(--fs-0); background: var(--raised); border: 1px solid color-mix(in oklch, var(--bad) 40%, var(--line)); border-radius: var(--r-2) }
+.err-h { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--ink); margin-bottom: 6px } .err-h .i { color: var(--bad) }
+.err p { color: var(--ink-2) } .err code { font-family: var(--font-mono); font-size: 12px }
+.err pre { margin: 10px 0 12px; padding: 10px 12px; font-family: var(--font-mono); font-size: 12px; line-height: 1.5; white-space: pre-wrap; color: var(--ink-2); background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-1) }
+.err-a { display: flex; gap: 8px }
+
+/* ---------- 17. FOCUS & A11Y (§6) ---------- */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.doc:focus-visible { outline: none }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap }
+</style>
+<div id="weft-app" lang="en">
+<!-- Icon sprite: 24-unit grid, 1.5px stroke, drawn at 16px -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-weft" viewBox="0 0 24 24"><path d="M3 8c3 0 3 4 6 4s3-4 6-4 3 4 6 4M3 16c3 0 3-4 6-4s3 4 6 4 3-4 6-4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.2 2.4 2.4 4.6-5"/></symbol>
+  <symbol id="i-sync" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v4h-4"/></symbol>
+  <symbol id="i-wifioff" viewBox="0 0 24 24"><path d="m3 3 18 18M8.5 16.5a5 5 0 0 1 7 0M5.3 13.3a9 9 0 0 1 4-2.4M2 9.5A14 14 0 0 1 6.4 6.6M22 9.5A14 14 0 0 0 11 5.1M18.7 13.3a9 9 0 0 0-3.3-2.2M12 20h.01"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M7.9 3h8.2L21 7.9v8.2L16.1 21H7.9L3 16.1V7.9L7.9 3z"/><path d="M12 8v4.5M12 16h.01"/></symbol>
+  <symbol id="i-userslash" viewBox="0 0 24 24"><circle cx="11" cy="8" r="3.5"/><path d="M4 20v-1a4.5 4.5 0 0 1 4.5-4.5h5M3 3l18 18"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20v-1a4.5 4.5 0 0 1 4.5-4.5h6A4.5 4.5 0 0 1 19.5 19v1"/></symbol>
+  <symbol id="i-cmd" viewBox="0 0 24 24"><path d="M9 9h6v6H9zM9 9H7a2 2 0 1 1 2-2v2M15 9h2a2 2 0 1 0-2-2v2M9 15H7a2 2 0 1 0 2 2v-2M15 15h2a2 2 0 1 1-2 2v-2"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="2.5"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" /></symbol>
+  <symbol id="i-quote" viewBox="0 0 24 24"><path d="M10 7H7a3 3 0 0 0-3 3v3a3 3 0 0 0 3 3h1a2 2 0 0 0 2-2v-4a3 3 0 0 0-3-3M20 7h-3a3 3 0 0 0-3 3v3a3 3 0 0 0 3 3h1a2 2 0 0 0 2-2v-4a3 3 0 0 0-3-3"/></symbol>
+  <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M15 4v16"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5V5M12 19v2.5M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M2.5 12H5M19 12h2.5M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 14A8.5 8.5 0 1 1 10 3.5a7 7 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5zM3 13l9 5 9-5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-brush" viewBox="0 0 24 24"><path d="m18 3 3 3-9.5 9.5-3-3L18 3zM8.5 14.5C6 14.5 4 16.5 4 20c3.5 0 5.5-2 5.5-4.5"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M4 8v8l8 4 8-4V8l-8-4-8 4zM4 8l8 4 8-4M12 12v8"/></symbol>
+  <symbol id="i-h1" viewBox="0 0 24 24"><path d="M4 6v12M12 6v12M4 12h8M17 10.5 19.5 9V18"/></symbol>
+  <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></symbol>
+</svg>
+
+<!-- Prototype-only controls. Not part of the product; delete on port. -->
+<div class="proto" role="toolbar" aria-label="Prototype controls">
+  <span class="tag">Prototype controls</span>
+  <button id="pb-map" aria-pressed="false" aria-haspopup="dialog" aria-controls="map">Map</button>
+  <span class="lbl">Scene</span>
+  <button data-scene="live" aria-pressed="true">Live</button>
+  <button data-scene="offline" aria-pressed="false">Offline</button>
+  <button data-scene="reconnected" aria-pressed="false">Reconnected</button>
+  <button data-scene="diverged" aria-pressed="false">Diverged</button>
+  <button data-scene="alone" aria-pressed="false">Alone</button>
+  <span class="sep"></span>
+  <span class="lbl">States</span>
+  <button data-scene="loading" aria-pressed="false">Loading</button>
+  <button data-scene="empty" aria-pressed="false">Empty</button>
+  <button data-scene="error" aria-pressed="false">Error</button>
+  <button data-scene="mismatch" aria-pressed="false">Version mismatch</button>
+  <span class="sep"></span>
+  <button id="pb-theme" aria-pressed="false">Light theme</button>
+  <button id="pb-flat" aria-pressed="false">Reduce transparency</button>
+  <button id="pb-k">⌘K</button>
+</div>
+
+<!-- L0 ground -->
+<div class="ground" aria-hidden="true"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+
+<!-- L2 top bar -->
+<header class="topbar glass">
+  <a class="brand inner" href="#" aria-label="Weft home"><svg class="i"><use href="#i-weft"/></svg><span>Weft</span></a>
+  <div class="title inner"><span id="title">Weft</span><span class="docid mono" title="document id">k7m2p9qa</span></div>
+  <button class="gbtn icon" aria-label="More"><svg class="i"><use href="#i-dots"/></svg></button>
+  <span class="grow"></span>
+  <button class="gbtn pres" id="pres-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="pop-pres">
+    <span class="stack" id="stack"></span><span class="pres-label" id="pres-label" hidden></span>
+  </button>
+  <button class="gbtn" id="k-btn" aria-label="Open command palette (Ctrl+K)"><svg class="i"><use href="#i-cmd"/></svg><span class="kbd">K</span></button>
+  <button class="gbtn icon" id="rail-btn" aria-label="Toggle side rail (Ctrl+.)" aria-expanded="true" aria-controls="rail"><svg class="i"><use href="#i-panel"/></svg></button>
+</header>
+
+<main class="shell" id="shell">
+  <div class="col">
+    <!-- inline notice strip (opaque) -->
+    <div class="notice" id="notice" hidden role="status" aria-live="polite" style="--hue:var(--ok)">
+      <svg class="i" id="n-icon"><use href="#i-check"/></svg>
+      <span class="grow" id="n-text"></span>
+      <button class="btn" id="n-action"></button>
+      <button class="xbtn" id="n-close" aria-label="Dismiss"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+
+    <!-- L1 editor page -->
+    <section class="page" id="page" data-mode="doc" aria-label="Document">
+      <div class="follow-tag" id="follow-tag" hidden>Following <b id="follow-name"></b> · any key or scroll exits</div>
+      <article class="doc" id="doc" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true" aria-label="Document body">
+        <h1 data-author="a" id="h1">Weft</h1>
+        <p data-author="a" id="p1">Two replicas, <code>a</code> and <code>b</code>, both hold <em>Hi</em> and go offline. <code>a</code> types <code>" there"</code> after the <em>i</em>; <code>b</code> types <code>"!"</code> after the same <em>i</em>. On merge, <em>i</em> has two right children, <code>a:3</code> and <code>b:3</code>, and siblings <span class="lsel">sort by id</span>, so both screens read <strong>Hi there!</strong> rather than <em>Hi! there</em>. Whose sentence comes first is arbitrary; that both agree is not.</p>
+        <p data-author="b" id="p2">The editor is the easy part. The hard part is the data structure that makes “exactly the same document” a guarantee rather than a hope, and the protocol that gets a replica that has been dark for an hour back in step without re-sending the world.</p>
+        <ul>
+          <li data-author="b">A new item goes as the right child of its left neighbour.</li>
+          <li data-author="c">If that seat is taken, it goes as the <mark class="rsel" style="--hue:var(--p6)">left child of its right neighbour</mark>.</li>
+          <li data-author="b">Siblings on the same side sort by id. That is the whole algorithm.</li>
+        </ul>
+        <blockquote data-author="a">No edit that has reached IndexedDB is ever lost, and no acknowledged edit is ever lost.</blockquote>
+      </article>
+
+      <div class="skel" aria-hidden="true"><i></i><i></i><i></i></div>
+      <p class="ghost">Start writing, or press ⌘K</p>
+      <div class="err" role="alert">
+        <div class="err-h"><svg class="i"><use href="#i-alert"/></svg><span id="err-h">Couldn’t open this document’s storage</span></div>
+        <p id="err-p">IndexedDB refused to open <code>weft:k7m2p9qa</code>. Nothing on disk was changed.</p>
+        <pre id="err-pre">UnknownError: Internal error opening backing store for indexedDB.open.
+    at IDBFactory.open (weft:k7m2p9qa)</pre>
+        <div class="err-a"><button class="btn primary" id="err-retry">Retry</button><button class="btn" id="err-fresh">Start fresh (keeps a copy)</button></div>
+      </div>
+
+      <!-- remote carets (aria-hidden: presence list carries the same information) -->
+      <div class="rcaret" id="caret-b" style="--hue:var(--p1)" aria-hidden="true"><span class="flag">Mara</span></div>
+      <div class="rcaret" id="caret-c" style="--hue:var(--p6)" aria-hidden="true"><span class="flag">Tomas</span></div>
+
+      <!-- L2 floating format bar -->
+      <div class="fmt glass" id="fmt" role="toolbar" aria-label="Formatting">
+        <button id="fmt-b" aria-pressed="false" aria-label="Bold (Ctrl+B)"><b>B</b></button>
+        <button aria-label="Italic (Ctrl+I)"><i>I</i></button>
+        <button aria-label="Code (Ctrl+E)"><svg class="i"><use href="#i-code"/></svg></button>
+        <button aria-label="Link (Ctrl+K)"><svg class="i"><use href="#i-link"/></svg></button>
+        <span class="sep"></span>
+        <button aria-pressed="true" aria-label="Paragraph">¶</button>
+        <button aria-label="Heading 1 (Ctrl+Alt+1)">H1</button>
+        <button aria-label="Heading 2 (Ctrl+Alt+2)">H2</button>
+        <button aria-label="Heading 3 (Ctrl+Alt+3)">H3</button>
+        <button aria-label="Bullet list"><svg class="i"><use href="#i-list"/></svg></button>
+        <button aria-label="Quote"><svg class="i"><use href="#i-quote"/></svg></button>
+      </div>
+    </section>
+  </div>
+
+  <!-- L1 side rail (opaque) -->
+  <aside class="rail" id="rail" aria-label="Side rail">
+    <section class="panel" aria-labelledby="insp-h">
+      <div class="panel-h"><h2 id="insp-h">Sync Inspector</h2><span class="sub" id="insp-sub">from live messages</span></div>
+      <div id="lanes"></div>
+      <div class="insp-foot" id="insp-foot" role="status" aria-live="polite" style="--hue:var(--ok)"><svg class="i"><use href="#i-check" id="foot-icon"/></svg><span id="foot-txt"></span></div>
+    </section>
+
+    <section class="panel" aria-labelledby="hist-h">
+      <div class="panel-h"><h2 id="hist-h">History</h2><span class="sub mono" id="tt-pos"></span></div>
+      <input type="range" id="tt" min="0" step="1" aria-label="Time-travel position (operations applied)">
+      <div class="hist-meta"><span id="tt-note"></span><label class="chk"><input type="checkbox" id="authors"> Show authors</label></div>
+      <p class="hint">The page re-renders <code>fold(apply, ∅, ops[0..n])</code>. Named versions and restore are not in v1.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="chaos-h">
+      <div class="panel-h"><h2 id="chaos-h">Chaos</h2><span class="sub">shared with the tests</span></div>
+      <div class="row"><span>Simulate offline<span class="desc">Closes the socket for real</span></span><button class="switch" role="switch" aria-checked="false" id="sw-offline" aria-label="Simulate offline"></button></div>
+      <div class="row"><span>Drop next <output id="drop-n" class="mono">3</output> messages<span class="desc">Gap in seq triggers a targeted request</span></span>
+        <span style="display:flex;gap:6px;align-items:center"><span class="stepper"><button id="drop-dec" aria-label="Fewer">−</button><output aria-hidden="true" id="drop-n2">3</output><button id="drop-inc" aria-label="More">+</button></span><button class="btn" id="drop-arm">Arm</button></span></div>
+      <div class="row"><span>Delay 2 s<span class="desc">Every message, both directions</span></span><button class="switch" role="switch" aria-checked="false" id="sw-delay" aria-label="Delay 2 s"></button></div>
+    </section>
+  </aside>
+</main>
+
+<!-- L2 status pill -->
+<div class="pill glass" id="pill" role="status" aria-live="polite" style="--hue:var(--ok)">
+  <button class="in" id="pill-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="pop-pill">
+    <span class="dot" aria-hidden="true"></span><span id="pill-txt">Saved</span><span class="suffix" id="pill-suffix" hidden></span>
+    <svg class="i" aria-hidden="true"><use href="#i-check" id="pill-icon"/></svg>
+  </button>
+</div>
+
+<!-- L2 popovers (one transient at a time) -->
+<div class="pop glass" id="pop-pill" hidden role="dialog" aria-label="Sync details">
+  <div class="in"><h3 id="pp-title"></h3><p id="pp-body"></p><div class="hash" id="pp-hash" hidden></div><button class="btn primary" id="pp-retry" hidden><svg class="i"><use href="#i-sync"/></svg>Retry now</button></div>
+</div>
+<div class="pop glass" id="pop-pres" hidden role="dialog" aria-label="Who is here"><div class="in" id="pres-list"></div></div>
+
+<!-- L2 ⌘K -->
+<dialog class="cmdk glass" id="cmdk" aria-label="Command palette">
+  <div class="k-search"><svg class="i"><use href="#i-search"/></svg><input id="k-in" type="text" placeholder="Type a command…" role="combobox" aria-expanded="true" aria-controls="k-list" aria-autocomplete="list" autocomplete="off"></div>
+  <div class="k-list" id="k-list" role="listbox"></div>
+  <div class="k-foot"><span><kbd>↑↓</kbd>navigate</span><span><kbd>↵</kbd>run</span><span><kbd>esc</kbd>close</span></div>
+</dialog>
+
+<!-- Prototype-only: flow map (every screen, every flow), flow bar, and the F4 "tab killed" interstitial -->
+<section class="map" id="map" hidden role="dialog" aria-modal="true" aria-labelledby="map-h">
+  <div class="map-in">
+    <header class="map-top">
+      <div class="grow"><h2 id="map-h">Weft — flow map</h2>
+        <p>Every screen and every flow in the prototype. Click a screen to jump to it; play a flow to walk it step by step (Prev / Next, or the arrow keys). The Map button in the prototype bar brings you back here.</p></div>
+      <button class="map-x" id="map-close"><svg class="i"><use href="#i-x"/></svg>Close · Live editor</button>
+    </header>
+    <h3 class="map-sec">Screens <span id="map-nscreens"></span><small>each card is the state, not a picture of it</small></h3>
+    <div class="cards" id="cards"></div>
+    <h3 class="map-sec">Flows <span id="map-nflows"></span><small>each step changes the prototype state</small></h3>
+    <div id="flows"></div>
+  </div>
+</section>
+<div class="flowbar" id="flowbar" hidden role="region" aria-label="Flow controls">
+  <span class="fb-tag">Flow <b id="fb-id"></b> · <span id="fb-title"></span> · step <span class="mono" id="fb-n"></span></span>
+  <span class="fb-cap" id="fb-cap" role="status" aria-live="polite"></span>
+  <span class="fb-ctl">
+    <button id="fb-prev">Prev</button><button id="fb-next">Next</button>
+    <button id="fb-map" aria-label="Open flow map">Map</button>
+    <button class="icon" id="fb-x" aria-label="Exit flow"><svg class="i"><use href="#i-x"/></svg></button>
+  </span>
+</div>
+<div class="killed" id="killed" hidden><div><b>Tab killed mid-word</b><p>No save button, nothing flushed by hand. Each keystroke reached IndexedDB in the same transaction as the op that produced it, so at most one keystroke is at risk (design §4.3).</p></div></div>
+</div><!-- /#weft-app -->
+
+<script>
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const root = document.documentElement, page = $('#page'), docEl = $('#doc');
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const R = { a: { id:'a', name:'You', hue:'var(--p4)', ini:'AB' }, b: { id:'b', name:'Mara', hue:'var(--p1)', ini:'M' }, c: { id:'c', name:'Tomas', hue:'var(--p6)', ini:'T' }, S: { id:'S', name:'server', hue:'var(--ink-3)', ini:'S' } };
+const state = { scene: 'live', carets: true, fmt: true, mode: 'doc', delay: false, dropN: 3 };
+let timers = [];
+const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
+const clearTimers = () => { timers.forEach(clearTimeout); timers = []; };
+
+/* ===== 1. The op log: tokenise the sample document into word spans.
+   Each character is one `ins` op; each block end is one boundary item (01-DESIGN §2.2). ===== */
+let TOTAL = 0; const blocks = [], words = [];
+(function tokenize() {
+  let pos = 0;
+  for (const b of $$('h1,p,li,blockquote', docEl)) {
+    b.dataset.start = pos;
+    const nodes = []; const tw = document.createTreeWalker(b, NodeFilter.SHOW_TEXT); let n;
+    while ((n = tw.nextNode())) nodes.push(n);
+    for (const node of nodes) {
+      const text = node.nodeValue, re = /\s*\S+\s*/g, frag = document.createDocumentFragment(); let m, last = 0;
+      while ((m = re.exec(text))) {
+        if (m.index > last) frag.append(text.slice(last, m.index));
+        const w = document.createElement('span'); w.className = 'w'; w.textContent = m[0]; w.dataset.t = m[0];
+        w.dataset.start = pos; pos += m[0].length; w.dataset.end = pos; words.push(w); frag.append(w); last = re.lastIndex;
+      }
+      if (last < text.length) frag.append(text.slice(last));
+      node.replaceWith(frag);
+    }
+    pos += 1; b.dataset.end = pos; blocks.push(b);
+  }
+  TOTAL = pos;
+})();
+
+/* ===== 2. Time-travel: fold(apply, ∅, ops[0..n]) rendered for real ===== */
+const tt = $('#tt'), ttPos = $('#tt-pos'), ttNote = $('#tt-note');
+let POS = TOTAL;
+tt.max = TOTAL; tt.value = TOTAL;
+function replay(p) {
+  POS = p; const live = p >= TOTAL;
+  for (const b of blocks) b.hidden = !live && +b.dataset.start >= p;
+  $$('ul', docEl).forEach(ul => { ul.hidden = [...ul.children].every(li => li.hidden); });
+  let tail = null;
+  for (const w of words) {
+    const s = +w.dataset.start, e = +w.dataset.end, t = w.dataset.t;
+    w.classList.remove('tail');
+    if (live || e <= p) { if (w.textContent !== t) w.textContent = t; w.classList.remove('gone'); if (!live) tail = w; }
+    else if (s < p) { w.textContent = t.slice(0, p - s); w.classList.remove('gone'); tail = w; }
+    else w.classList.add('gone');
+  }
+  if (tail) tail.classList.add('tail');
+  page.classList.toggle('tt', !live);
+  docEl.contentEditable = live ? 'true' : 'false';
+  tt.style.setProperty('--fill', (p / TOTAL * 100) + '%');
+  ttPos.textContent = `op ${p} / ${TOTAL}`;
+  ttNote.textContent = live ? 'Live · latest' : `Viewing op ${p} · read-only`;
+  updateTitle(); layout();
+}
+tt.addEventListener('input', () => replay(+tt.value));
+$('#authors').addEventListener('change', e => docEl.dataset.authorView = e.target.checked ? '1' : '0');
+function updateTitle() {
+  const h = $('#h1'); const t = state.mode === 'doc' && !h.hidden ? h.textContent.trim() : '';
+  $('#title').textContent = t || 'Untitled';
+}
+
+/* ===== 3. Remote carets anchored to items (word spans), gliding on --ease ===== */
+const p2words = $$('#p2 .w'); let maraIdx = 4;
+const carets = {
+  b: { el: $('#caret-b'), side: 'R', anchor: () => p2words[maraIdx] },
+  c: { el: $('#caret-c'), side: 'R', anchor: () => { const ws = $$('.rsel .w'); return ws[ws.length - 1]; } },
+};
+function rectOf(w) {
+  if (!w || w.classList.contains('gone') || w.closest('[hidden]')) return null;
+  const node = w.firstChild, len = w.textContent.replace(/\s+$/, '').length; if (!node || !len) return null;
+  const r = document.createRange(); r.setStart(node, 0); r.setEnd(node, Math.min(len, node.length)); return r.getBoundingClientRect();
+}
+const fmt = $('#fmt'), lsel = $('.lsel', docEl);
+function layout() {
+  const pr = page.getBoundingClientRect();
+  for (const k in carets) {
+    const c = carets[k], r = state.carets && state.mode === 'doc' ? rectOf(c.anchor()) : null;
+    c.el.classList.toggle('off', !r); if (!r) continue;
+    c.el.style.left = ((c.side === 'R' ? r.right : r.left) - pr.left) + 'px';
+    c.el.style.top = (r.top - pr.top) + 'px'; c.el.style.height = r.height + 'px';
+  }
+  const show = state.fmt && state.mode === 'doc' && POS >= TOTAL;
+  fmt.hidden = !show;
+  if (show) {
+    const r = lsel.getClientRects()[0]; if (!r) return;
+    const left = Math.max(12, Math.min(pr.width - fmt.offsetWidth - 12, r.left + r.width / 2 - pr.left - fmt.offsetWidth / 2));
+    fmt.style.left = left + 'px'; fmt.style.top = (r.top - pr.top - fmt.offsetHeight - 10) + 'px';
+  }
+}
+function flag(c) { c.el.classList.add('moved'); c.el.classList.remove('idle'); clearTimeout(c.ft); c.ft = setTimeout(() => c.el.classList.remove('moved'), 1500); }
+setInterval(() => {
+  if (!state.carets || state.mode !== 'doc' || POS < TOTAL || document.hidden) return;
+  maraIdx = (maraIdx + 1) % p2words.length; layout(); flag(carets.b);
+}, 3800);
+setTimeout(() => carets.c.el.classList.add('idle'), 30000); /* Tomas goes idle after 30 s */
+new ResizeObserver(layout).observe(page);
+window.addEventListener('resize', layout);
+if (document.fonts) document.fonts.ready.then(layout);
+
+/* ===== 4. Status pill — drawn only from session state (§4.1) ===== */
+const pill = $('#pill'), pillIn = $('.in', pill), pillTxt = $('#pill-txt'), pillSuffix = $('#pill-suffix'), pillIcon = $('#pill-icon');
+let pillPop = {};
+function setPill(p) {
+  pill.style.setProperty('--hue', `var(--${p.k})`); pill.dataset.k = p.k; pillPop = p.pop || {};
+  pillIn.classList.add('swap');
+  setTimeout(() => {
+    pillTxt.textContent = p.text; pillIcon.setAttribute('href', '#i-' + p.icon);
+    pillSuffix.textContent = p.suffix ? '· ' + p.suffix : ''; pillSuffix.hidden = !p.suffix;
+    pillIn.classList.remove('swap');
+  }, 120);
+}
+
+/* ===== 5. Presence stack (§4.2) ===== */
+function avatar(r, extra = '') { return `<span class="av ${extra}" style="--hue:${r.hue}" title="${r.name}" role="img" aria-label="${r.name}">${r.ini}</span>`; }
+let presMode = 'peers';
+function setPresence(mode) {
+  presMode = mode; const stack = $('#stack'), label = $('#pres-label');
+  let html = avatar(R.a), lbl = '';
+  if (mode === 'peers') html += avatar(R.b) + avatar(R.c);
+  else if (mode === 'alone') lbl = 'Only you';
+  else { html += `<span class="av ghost" role="img" aria-label="Peers unknown"><svg class="i"><use href="#i-userslash"/></svg></span>`; lbl = 'Peers unknown'; }
+  stack.innerHTML = html; label.textContent = lbl; label.hidden = !lbl;
+  $('#pres-btn').setAttribute('aria-label', mode === 'peers' ? 'Who is here: you, Mara, Tomas' : lbl);
+  page.classList.toggle('no-peers', mode !== 'peers');
+}
+function presenceList() {
+  const me = `<div class="person">${avatar(R.a)}<div class="who"><b>You</b><span>replica a · this device</span></div></div>`;
+  if (presMode === 'peers') return me +
+    `<div class="person">${avatar(R.b)}<div class="who"><b>Mara</b><span>replica b · editing paragraph 2</span></div><button class="btn" data-follow="b">Follow</button></div>` +
+    `<div class="person">${avatar(R.c)}<div class="who"><b>Tomas</b><span>replica c · selecting in the list</span></div><button class="btn" data-follow="c">Follow</button></div>`;
+  if (presMode === 'alone') return me + `<div class="person"><div class="who"><span>No one else is here. Anyone with the URL can edit.</span></div></div>`;
+  return me + `<div class="person"><span class="av ghost"><svg class="i"><use href="#i-userslash"/></svg></span><div class="who"><b>Peers unknown</b><span>The server is the only source of presence and it is unreachable.</span></div></div>`;
+}
+
+/* ===== 6. Inline notice strip (§4.7) ===== */
+const notice = $('#notice');
+function setNotice(n) {
+  if (!n) { notice.hidden = true; return; }
+  notice.hidden = false; notice.setAttribute('role', n.role || 'status'); notice.setAttribute('aria-live', n.role === 'alert' ? 'assertive' : 'polite');
+  notice.style.setProperty('--hue', `var(--${n.k})`); $('#n-icon use').setAttribute('href', '#i-' + n.icon);
+  $('#n-text').textContent = n.text; const a = $('#n-action'); a.textContent = n.action || ''; a.dataset.act = n.act || ''; a.hidden = !n.action;
+  notice.classList.remove('in'); void notice.offsetWidth; notice.classList.add('in');
+}
+const NOTICE_PERSISTED = { k: 'ok', icon: 'db', text: 'Storage persisted. This browser will not evict Weft’s offline copy without asking you.' };
+const NOTICE_DECLINED = { k: 'warn', icon: 'db', text: 'Persistence was declined. Weft still saves here; the browser may reclaim the space under disk pressure.', action: 'Ask again', act: 'persist' };
+function flashLanes() { $$('.lane').forEach(l => { l.classList.remove('flash'); void l.offsetWidth; l.classList.add('flash'); }); }
+$('#n-close').addEventListener('click', () => { notice.hidden = true; });
+$('#n-action').addEventListener('click', e => {
+  const act = e.target.dataset.act;
+  if (act === 'inspector') { openRail(true); flashLanes(); }
+  else if (act === 'report') { copy(report()); e.target.textContent = 'Copied'; setTimeout(() => e.target.textContent = 'Copy report', 1600); }
+  else if (act === 'persist') { /* navigator.storage.persist() resolved true */ setNotice(NOTICE_PERSISTED); currentPill = { ...currentPill, suffix: '' }; setPill(currentPill); }
+});
+function copy(t) { if (navigator.clipboard) navigator.clipboard.writeText(t).catch(() => {}); }
+
+/* ===== 7. Sync Inspector lanes (§4.5) ===== */
+const fhash = s => { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h.toString(16).padStart(8, '0'); };
+const hashOf = (sv, salt = '') => { const h = fhash(JSON.stringify(sv) + salt); return '#' + h.slice(0, 4) + '…' + h.slice(6, 8); };
+function lastOps(sv, pattern) {
+  const used = {}, out = [];
+  for (let i = pattern.length - 1; i >= 0; i--) { const r = pattern[i]; used[r] = used[r] || 0; const seq = sv[r] - used[r]++; if (seq > 0) out.unshift({ seq, r }); }
+  return out;
+}
+let currentLanes = [], currentFooter = null;
+function renderLanes(lanes, footer) {
+  currentLanes = lanes; currentFooter = footer;
+  const el = $('#lanes');
+  el.innerHTML = lanes.length ? lanes.map(l => {
+    const r = R[l.id], hash = hashOf(l.sv, l.salt || ''), hk = l.salt ? 'bad' : (footer && footer.k === 'ok' ? 'ok' : '');
+    const sv = Object.entries(l.sv).map(([k, v]) => `<span class="chip">${k}:${v}</span>`).join('');
+    const ops = lastOps(l.sv, l.pat || 'aabacaabacba').map(o => `<span class="chip op" style="--hue:${R[o.r].hue}">${o.seq}@${o.r}</span>`).join('');
+    const meta = l.meta + (state.delay && l.id === 'a' ? ' · +2 s' : '');
+    return `<div class="lane ${l.stale ? 'stale' : ''}" style="--hue:${r.hue}">
+      <div class="lane-h"><span class="lane-id mono">${r.id}</span><span class="lane-name">${r.name}<span class="lane-meta"> · ${meta}</span></span><span class="lane-hash mono ${hk}" title="content hash">${hash}</span></div>
+      <div class="chips-l">state vector</div><div class="chips">${sv}</div>
+      ${ops ? `<div class="chips-l">last ops</div><div class="chips">${ops}</div>` : ''}</div>`;
+  }).join('') : `<div class="lane-empty">No replica state. Storage failed to open, so there is no op log to show.</div>`;
+  const f = $('#insp-foot'); f.hidden = !footer;
+  if (footer) { f.style.setProperty('--hue', `var(--${footer.k})`); $('#foot-icon').setAttribute('href', '#i-' + ({ ok: 'check', sync: 'sync', bad: 'alert' })[footer.k]); $('#foot-txt').textContent = footer.text; }
+}
+function report() {
+  const a = currentLanes[0], b = currentLanes[1];
+  return `Weft divergence report\ndoc k7m2p9qa\nA sv ${JSON.stringify(a.sv)} hash ${hashOf(a.sv, a.salt || '')}\nB sv ${JSON.stringify(b.sv)} hash ${hashOf(b.sv, b.salt || '')}\n${new Date().toISOString()}`;
+}
+
+/* ===== 8. Scenes — each one is a full statement of pill + presence + Inspector + strip (§7) ===== */
+let currentPill = null;
+const A = TOTAL - 169; /* replica a's sequence number in the converged state */
+const ERR_STORAGE = { h: 'Couldn’t open this document’s storage', p: 'IndexedDB refused to open <code>weft:k7m2p9qa</code>. Nothing on disk was changed.',
+  pre: 'UnknownError: Internal error opening backing store for indexedDB.open.\n    at IDBFactory.open (weft:k7m2p9qa)' };
+const ERR_VERSION = { h: 'Can’t join this server', p: 'This server speaks protocol v2; this tab speaks v1. Your work is safe on this device.',
+  pre: '← hello {"proto":2,"server":"weft-relay/0.4.0"}\n→ hello {"proto":1,"client":"weft/0.3.2"}\n← close 4001 unsupported protocol' };
+function sceneDef(name) {
+  const base = { a: A, b: 105, c: 64 };
+  const saved = { k: 'ok', text: 'Saved', icon: 'check', pop: { body: 'Every change is on the server. Last ack 2 s ago.' } };
+  const conv = { k: 'ok', text: 'A ≡ B ✓ converged' };
+  const L = (id, sv, meta, pat, x = {}) => ({ id, sv, meta, pat, ...x });
+  const three = (sv, m = 'live') => [L('a', sv, 'this device'), L('b', sv, m), L('c', sv, m)];
+  switch (name) {
+    case 'live': return { pill: saved, presence: 'peers', carets: true, fmt: true, notice: null, mode: 'doc', lanes: three(base), footer: conv };
+    case 'offline': {
+      const mine = { a: A, b: 97, c: 60 }, stale = { a: A - 31, b: 97, c: 60 };
+      return { pill: { k: 'warn', text: 'Offline · 31 changes on this device', icon: 'wifioff', pop: { body: 'Saved on this device. Will sync when back online.' } },
+        presence: 'unknown', carets: false, fmt: true, notice: null, mode: 'doc',
+        lanes: [L('a', mine, 'this device · socket closed', 'aaaaaaaaaaaa'), L('b', stale, 'last seen 4 min ago', 'aabacaabacba', { stale: true }), L('c', stale, 'last seen 4 min ago', 'aabacaabacba', { stale: true })],
+        footer: { k: 'sync', text: 'A ≠ B · 31 ops in flight' } };
+    }
+    case 'reconnected': return {
+      pill: { k: 'sync', text: 'Catching up · 12 in, 31 out', icon: 'sync', pop: { body: '12 ops coming in, 31 going out, computed from the state-vector diff.' } },
+      presence: 'peers', carets: true, fmt: true, notice: null, mode: 'doc',
+      lanes: [L('a', { a: A, b: 97, c: 60 }, 'this device · catching up', 'aaaaaaaaaaaa'), L('b', { a: A - 31, b: 105, c: 64 }, 'live'), L('c', { a: A - 31, b: 105, c: 64 }, 'live')],
+      footer: { k: 'sync', text: 'A ≠ B · 31 ops in flight' },
+      then: { after: 1800, pill: { ...saved, pop: { body: 'Every change is on the server. Last ack 1 s ago.' } }, lanes: three(base), footer: conv,
+        notice: { k: 'ok', icon: 'check', text: 'Back online — 31 offline edits merged.', action: 'Show in Inspector', act: 'inspector' } } };
+    case 'diverged': return {
+      pill: { k: 'bad', text: 'Diverged — report', icon: 'alert', pop: { body: 'Equal state vectors, different content hashes. The tripwire (I5) fired.', hashes: [['a · this device', hashOf(base)], ['b · Mara', hashOf(base, 'x')]] } },
+      presence: 'peers', carets: true, fmt: true, mode: 'doc',
+      notice: { k: 'bad', icon: 'alert', role: 'alert', text: 'Replicas disagree (hash mismatch). Nothing was lost; this is a bug and has been logged locally.', action: 'Copy report', act: 'report' },
+      lanes: [L('a', base, 'this device'), L('b', base, 'live', 'aabacaabacba', { salt: 'x' }), L('c', base, 'live')], footer: { k: 'bad', text: 'A ≠ B · hashes differ' } };
+    case 'alone': return {
+      pill: { ...saved, suffix: 'storage may be evicted', pop: { body: 'Every change is on the server. Last ack 2 s ago. navigator.storage.persist() returned false, so this browser may evict the offline copy.' } },
+      presence: 'alone', carets: false, fmt: true, mode: 'doc',
+      notice: { k: 'warn', icon: 'db', text: 'This browser may evict Weft’s offline storage.', action: 'Ask to persist', act: 'persist' },
+      lanes: [L('a', base, 'this device'), L('S', base, 'relay · durable log', 'aabacaabacba')], footer: { k: 'ok', text: 'A ≡ S ✓ converged' } };
+    case 'loading': return { pill: { k: 'warn', text: 'Connecting…', icon: 'clock', pop: { body: 'Attempt 1 · next retry in 2 s. Restoring the snapshot from IndexedDB meanwhile.' } },
+      presence: 'unknown', carets: false, fmt: false, notice: null, mode: 'loading', lanes: [L('a', base, 'this device · restoring snapshot', 'aaaaaaaaaaaa')], footer: null };
+    case 'empty': return { pill: saved, presence: 'alone', carets: false, fmt: false, notice: null, mode: 'empty',
+      lanes: [L('a', { a: 0 }, 'this device', ''), L('S', { a: 0 }, 'relay · durable log', '')], footer: { k: 'ok', text: 'A ≡ S ✓ converged' } };
+    case 'error': return { pill: { k: 'warn', text: 'Reconnecting in 8s · 0 on this device', icon: 'clock', pop: { body: 'Last error: WebSocket connection to ws://127.0.0.1:8787/d/k7m2p9qa failed: ECONNREFUSED', retry: true } },
+      presence: 'unknown', carets: false, fmt: false, notice: null, mode: 'error', err: ERR_STORAGE, lanes: [], footer: null };
+    case 'mismatch': return { pill: { k: 'bad', text: 'Can’t connect · protocol v2', icon: 'alert', pop: { body: 'The server was upgraded to protocol v2; this tab speaks v1. Nothing is sent; every change stays on this device until the tab is reloaded.' } },
+      presence: 'unknown', carets: false, fmt: false, notice: null, mode: 'error', err: ERR_VERSION, lanes: [L('a', base, 'this device · nothing sent', 'aabacaabacba')], footer: null };
+  }
+}
+function renderErr(e) { $('#err-h').textContent = e.h; $('#err-p').innerHTML = e.p; $('#err-pre').textContent = e.pre; }
+function apply(d) {
+  currentPill = d.pill; setPill(d.pill); setPresence(d.presence); setNotice(d.notice);
+  state.carets = d.carets; state.fmt = d.fmt; state.mode = d.mode; page.dataset.mode = d.mode;
+  if (d.err) renderErr(d.err);
+  renderLanes(d.lanes, d.footer); $('#insp-sub').textContent = d.mode === 'error' ? 'no messages yet' : (state.scene === 'offline' ? 'last messages before disconnect' : 'from live messages');
+  $('#killed').hidden = true; setBold(false);
+  updateTitle(); requestAnimationFrame(layout);
+}
+/* mutate(d) lets a flow step adjust a scene definition (counts, copy, timing) before it is applied */
+function setScene(name, mutate) {
+  clearTimers(); closePops(); unfollow();
+  state.scene = name; const d = sceneDef(name); if (mutate) mutate(d); apply(d);
+  $$('.proto [data-scene]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.scene === name)));
+  $('#sw-offline').setAttribute('aria-checked', String(name === 'offline'));
+  if (d.then) later(() => { setPill(d.then.pill); currentPill = d.then.pill; renderLanes(d.then.lanes, d.then.footer); setNotice(d.then.notice); }, d.then.after);
+  if (name === 'error') { let s = 8; const tick = () => { s = s > 1 ? s - 1 : 8; pillTxt.textContent = `Reconnecting in ${s}s · 0 on this device`; later(tick, 1000); }; later(tick, 1000); }
+}
+$$('.proto [data-scene]').forEach(b => b.addEventListener('click', () => setScene(b.dataset.scene)));
+/* Retry re-runs the handshake: storage errors clear on retry in this prototype; a protocol mismatch does not. */
+$('#err-retry').addEventListener('click', () => { const back = state.scene === 'mismatch' ? 'mismatch' : 'live'; setScene('loading'); later(() => setScene(back), 1400); });
+$('#err-fresh').addEventListener('click', () => setScene('empty'));
+
+/* ===== 9. Chaos controls (§4.5) ===== */
+$('#sw-offline').addEventListener('click', e => { const on = e.currentTarget.getAttribute('aria-checked') !== 'true'; setScene(on ? 'offline' : 'reconnected'); });
+$('#sw-delay').addEventListener('click', e => { state.delay = e.currentTarget.getAttribute('aria-checked') !== 'true'; e.currentTarget.setAttribute('aria-checked', String(state.delay)); renderLanes(currentLanes, currentFooter); });
+const setDrop = n => { state.dropN = Math.min(9, Math.max(1, n)); $('#drop-n').textContent = $('#drop-n2').textContent = state.dropN; };
+$('#drop-dec').addEventListener('click', () => setDrop(state.dropN - 1));
+$('#drop-inc').addEventListener('click', () => setDrop(state.dropN + 1));
+$('#drop-arm').addEventListener('click', e => {
+  if (!['live', 'alone', 'reconnected', 'diverged'].includes(state.scene)) return;
+  const n = state.dropN, btn = e.currentTarget; btn.textContent = 'Armed'; btn.classList.add('armed');
+  const lanes = currentLanes, footer = currentFooter, p = currentPill;
+  later(() => { setPill({ k: 'sync', text: `Syncing · ${n}`, icon: 'sync', pop: { body: `${n} changes are on this device and in flight.` } });
+    renderLanes(lanes, { k: 'sync', text: `A ≠ B · ${n} ops in flight` }); }, 400);
+  later(() => { setPill(p); renderLanes(lanes, footer); btn.textContent = 'Arm'; btn.classList.remove('armed'); }, 2800);
+});
+
+/* ===== 10. Popovers — pill details and presence (one transient at a time) ===== */
+const popPill = $('#pop-pill'), popPres = $('#pop-pres');
+function closePops() { popPill.hidden = popPres.hidden = true; $('#pill-btn').setAttribute('aria-expanded', 'false'); $('#pres-btn').setAttribute('aria-expanded', 'false'); }
+$('#pill-btn').addEventListener('click', e => {
+  const open = popPill.hidden; closePops(); if (!open) return;
+  $('#pp-title').textContent = pillTxt.textContent + pillSuffix.textContent; $('#pp-body').textContent = pillPop.body || '';
+  const h = $('#pp-hash'); h.hidden = !pillPop.hashes; if (pillPop.hashes) h.innerHTML = pillPop.hashes.map(([n, v], i) => `<span>${n} <b>${v}</b></span>`).join('');
+  $('#pp-retry').hidden = !pillPop.retry;
+  popPill.hidden = false; popPill.style.left = '20px'; popPill.style.bottom = '66px'; e.currentTarget.setAttribute('aria-expanded', 'true');
+  ($('#pp-retry').hidden ? popPill : $('#pp-retry')).focus?.();
+});
+$('#pp-retry').addEventListener('click', () => { setScene('loading'); later(() => setScene('live'), 1400); });
+$('#pres-btn').addEventListener('click', e => {
+  const open = popPres.hidden; closePops(); if (!open) return;
+  $('#pres-list').innerHTML = presenceList();
+  const r = e.currentTarget.getBoundingClientRect(); popPres.hidden = false;
+  popPres.style.top = (r.bottom + 8) + 'px'; popPres.style.right = Math.max(12, window.innerWidth - r.right) + 'px'; popPres.style.left = 'auto';
+  e.currentTarget.setAttribute('aria-expanded', 'true');
+});
+$('#pres-list').addEventListener('click', e => { const b = e.target.closest('[data-follow]'); if (b) follow(b.dataset.follow); });
+document.addEventListener('pointerdown', e => { if (!e.target.closest('.pop, #pill-btn, #pres-btn')) closePops(); });
+
+/* ===== 11. Follow (§4.2): 2 px frame in their colour; any keystroke or scroll exits ===== */
+let following = null;
+function follow(id) { following = id; page.classList.add('following'); page.style.setProperty('--follow', R[id].hue); $('#follow-name').textContent = R[id].name; $('#follow-tag').hidden = false; closePops(); carets[id]?.el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+function unfollow() { if (!following) return; following = null; page.classList.remove('following'); $('#follow-tag').hidden = true; }
+window.addEventListener('wheel', () => unfollow(), { passive: true });
+
+/* ===== 12. ⌘K palette — real <dialog>: focus trap via showModal, Esc closes, focus returns (§4.8) ===== */
+const dlg = $('#cmdk'), kin = $('#k-in'), klist = $('#k-list'); let kItems = [], kIdx = 0, lastFocus = null;
+const isLight = () => root.dataset.theme === 'light', isFlat = () => root.dataset.flat === '1';
+const CMDS = [
+  { g: 'Document', t: 'Rename via heading', i: 'h1', run: () => { setScene(state.mode === 'doc' ? state.scene : 'live'); $('#h1').scrollIntoView({ block: 'center' }); docEl.focus(); } },
+  { g: 'Document', t: 'New document', i: 'plus', run: () => setScene('empty') },
+  { g: 'Document', t: 'Theme', i: 'sun', val: () => isLight() ? 'Light' : 'Dark', run: toggleTheme },
+  { g: 'Document', t: 'Reduce transparency', i: 'layers', val: () => isFlat() ? 'On' : 'Off', run: toggleFlat },
+  { g: 'Collaboration', t: 'Set my name', i: 'user', val: () => 'Abheet', run: () => {} },
+  { g: 'Collaboration', t: 'Follow…', i: 'eye', run: () => setTimeout(() => $('#pres-btn').click(), 50) },
+  { g: 'History', t: 'Time-travel', i: 'clock', run: () => { openRail(true); setTimeout(() => tt.focus(), 60); } },
+  { g: 'History', t: 'Show authors', i: 'brush', val: () => $('#authors').checked ? 'On' : 'Off', run: () => { $('#authors').click(); } },
+  { g: 'Debug', t: 'Simulate offline', i: 'wifioff', val: () => state.scene === 'offline' ? 'On' : 'Off', run: () => $('#sw-offline').click() },
+  { g: 'Debug', t: 'Drop next N', i: 'drop', val: () => `N = ${state.dropN}`, run: () => { openRail(true); $('#drop-arm').click(); } },
+  { g: 'Debug', t: 'Toggle Inspector', i: 'panel', hint: 'Ctrl .', run: () => openRail() },
+  { g: 'Debug', t: 'Copy state vector', i: 'copy', run: () => copy(JSON.stringify(currentLanes[0]?.sv || {})) },
+];
+function openK() { if (dlg.open) return; lastFocus = document.activeElement; closePops(); kin.value = ''; dlg.showModal(); renderK(''); kin.focus(); }
+function closeK() { if (dlg.open) dlg.close(); }
+dlg.addEventListener('close', () => { if (lastFocus && lastFocus.focus && document.contains(lastFocus)) lastFocus.focus(); });
+dlg.addEventListener('pointerdown', e => { const r = dlg.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) closeK(); });
+kin.addEventListener('input', () => renderK(kin.value));
+kin.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown') { kIdx = Math.min(kIdx + 1, kItems.length - 1); paintK(); e.preventDefault(); }
+  else if (e.key === 'ArrowUp') { kIdx = Math.max(kIdx - 1, 0); paintK(); e.preventDefault(); }
+  else if (e.key === 'Enter') { runK(kIdx); e.preventDefault(); }
+});
+klist.addEventListener('click', e => { const it = e.target.closest('.k-it'); if (it) runK(+it.dataset.i); });
+klist.addEventListener('mousemove', e => { const it = e.target.closest('.k-it'); if (it && +it.dataset.i !== kIdx) { kIdx = +it.dataset.i; paintK(); } });
+function renderK(q) {
+  q = q.trim().toLowerCase(); kItems = CMDS.filter(c => !q || c.t.toLowerCase().includes(q) || c.g.toLowerCase().includes(q)); kIdx = 0;
+  let html = '', g = '';
+  kItems.forEach((c, i) => { if (c.g !== g) { html += `<div class="k-g">${c.g}</div>`; g = c.g; }
+    html += `<div class="k-it" role="option" id="k-${i}" data-i="${i}" aria-selected="false"><svg class="i"><use href="#i-${c.i}"/></svg><span>${c.t}</span>${c.val ? `<span class="val">${c.val()}</span>` : ''}${c.hint ? `<kbd>${c.hint}</kbd>` : ''}</div>`; });
+  klist.innerHTML = kItems.length ? html : `<div class="k-empty">No commands match “${esc(q)}”</div>`; paintK();
+}
+function paintK() { $$('.k-it', klist).forEach((el, i) => el.setAttribute('aria-selected', String(i === kIdx))); const a = $(`#k-${kIdx}`); if (a) { kin.setAttribute('aria-activedescendant', a.id); a.scrollIntoView({ block: 'nearest' }); } }
+function runK(i) { const c = kItems[i]; if (!c) return; closeK(); c.run(); }
+$('#k-btn').addEventListener('click', openK); $('#pb-k').addEventListener('click', openK);
+
+/* ===== 13. Theme, transparency, rail ===== */
+function setTheme(light) { root.dataset.theme = light ? 'light' : 'dark'; $('#pb-theme').setAttribute('aria-pressed', String(light)); $('#pb-theme').textContent = light ? 'Dark theme' : 'Light theme'; }
+function setFlat(on) { if (on) root.dataset.flat = '1'; else delete root.dataset.flat; $('#pb-flat').setAttribute('aria-pressed', String(on)); }
+function toggleTheme() { setTheme(!isLight()); }
+function toggleFlat() { setFlat(!isFlat()); }
+/* Bold on the static selection — so the format bar does something visible (F7) */
+function setBold(on) { lsel.classList.toggle('bolded', on); $('#fmt-b').setAttribute('aria-pressed', String(on)); }
+$('#fmt-b').addEventListener('click', () => setBold(!lsel.classList.contains('bolded')));
+function openRail(force) { const sh = $('#shell'), closed = sh.classList.contains('rail-closed'); const open = force === undefined ? closed : force; sh.classList.toggle('rail-closed', !open); $('#rail-btn').setAttribute('aria-expanded', String(open)); }
+$('#pb-theme').addEventListener('click', toggleTheme); $('#pb-flat').addEventListener('click', toggleFlat); $('#rail-btn').addEventListener('click', () => openRail());
+
+/* ===== 14. Keyboard ===== */
+document.addEventListener('keydown', e => {
+  const mod = e.ctrlKey || e.metaKey;
+  if (mod && e.key.toLowerCase() === 'k') { e.preventDefault(); dlg.open ? closeK() : openK(); return; }
+  if (mod && e.key === '.') { e.preventDefault(); openRail(); return; }
+  if (e.key === 'Escape') { if (!mapEl.hidden) { closeMap(); return; } closePops(); return; }
+  if (flow && mapEl.hidden && !mod && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.target.closest('input, textarea, [contenteditable="true"], dialog')) {
+    e.preventDefault(); if (e.key === 'ArrowRight') nextStep(); else prevStep(); return;
+  }
+  if (following && !dlg.open && !e.target.closest('.proto, .flowbar, .map')) unfollow();
+});
+
+/* ===== 15. PROTOTYPE FLOW MAP — every screen as a card, every flow as a stepper (not part of the product) ===== */
+const mapEl = $('#map'); let mapReturnFocus = null;
+const openPres = () => { if (popPres.hidden) $('#pres-btn').click(); };
+const openPillPop = () => { if (popPill.hidden) $('#pill-btn').click(); };
+const pulse = el => { if (!el) return; el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse'); };
+document.addEventListener('animationend', e => { if (e.animationName === 'pulse') e.target.classList.remove('pulse'); });
+const scrubTo = (target, ms = 1100) => { /* moves the real History slider, step by step */
+  const from = POS, n = Math.max(1, Math.round(ms / 45));
+  for (let i = 1; i <= n; i++) later(() => { const v = Math.round(from + (target - from) * i / n); tt.value = v; replay(v); }, ms * i / n);
+};
+const countUp = (to, ms, fn) => { for (let i = 1; i <= to; i++) later(() => fn(i), 200 + ms * i / to); };
+const typeInto = (input, text, each) => { input.value = ''; [...text].forEach((ch, i) => later(() => { input.value = text.slice(0, i + 1); each(input.value); }, 90 * (i + 1))); };
+const goLatest = () => { tt.value = TOTAL; replay(TOTAL); $('#authors').checked = false; docEl.dataset.authorView = '0'; };
+const resetLook = () => { setTheme(false); setFlat(false); };
+
+/* Screen cards: { id, label, desc, thumb spec, go() } — thumb is a CSS mini-rendering built from tokens */
+const SCREENS = [
+  { id: 'live', l: 'Live editor', d: 'Two peers, named carets, Saved.', th: { pill: 'ok', pres: 'peers', rail: 1, carets: 1 }, go: () => setScene('live') },
+  { id: 'offline', l: 'Offline', d: 'Amber pill with the count; peers unknown.', th: { pill: 'warn', wide: 1, pres: 'ghost', rail: 1 }, go: () => setScene('offline') },
+  { id: 'reconnected', l: 'Reconnected', d: 'Catching up, then the merge strip.', th: { pill: 'sync', wide: 1, pres: 'peers', rail: 1, strip: 'ok' }, go: () => setScene('reconnected') },
+  { id: 'diverged', l: 'Diverged', d: 'Tripwire: alert strip, hashes differ.', th: { pill: 'bad', wide: 1, pres: 'peers', rail: 1, strip: 'bad', carets: 1 }, go: () => { setScene('diverged'); openRail(true); } },
+  { id: 'alone', l: 'Alone', d: 'Only you · storage may be evicted.', th: { pill: 'ok', wide: 1, pres: 'alone', rail: 1, strip: 'warn' }, go: () => setScene('alone') },
+  { id: 'loading', l: 'Loading', d: 'Three skeleton lines. Connecting…', th: { pill: 'warn', wide: 1, pres: 'ghost', rail: 1, mode: 'skel' }, go: () => setScene('loading') },
+  { id: 'empty', l: 'Empty', d: 'One ghost line, never a skeleton.', th: { pill: 'ok', pres: 'alone', rail: 1, mode: 'empty' }, go: () => setScene('empty') },
+  { id: 'error', l: 'Error card', d: 'Storage failed to open: Retry / Start fresh.', th: { pill: 'warn', wide: 1, pres: 'ghost', rail: 1, mode: 'error' }, go: () => setScene('error') },
+  { id: 'mismatch', l: 'Version mismatch', d: 'Protocol v2 vs v1; work is safe on this device.', th: { pill: 'bad', wide: 1, pres: 'ghost', rail: 1, mode: 'error' }, go: () => setScene('mismatch') },
+  { id: 'cmdk', l: '⌘K palette', d: 'A real dialog: focus trap, Esc closes.', th: { pill: 'ok', pres: 'peers', rail: 1, pop: 'k' }, go: () => { setScene('live'); openK(); } },
+  { id: 'inspector', l: 'Sync Inspector', d: 'One lane per replica; footer from real messages.', th: { pill: 'ok', pres: 'peers', rail: 1, hi: 1 }, go: () => { setScene('live'); openRail(true); later(flashLanes, 350); } },
+  { id: 'history', l: 'History / time-travel', d: 'fold(apply, ∅, ops[0..n]), rendered.', th: { pill: 'ok', pres: 'peers', rail: 'hist', mode: 'tt' }, go: () => { setScene('live'); openRail(true); tt.value = TOTAL - 40; replay(TOTAL - 40); later(() => tt.focus(), 300); } },
+  { id: 'presence', l: 'Presence popover + Follow', d: 'Who is here; Follow tracks a caret.', th: { pill: 'ok', pres: 'peers', rail: 1, pop: 'pres', follow: 1 }, go: () => { setScene('live'); later(openPres, 250); } },
+  { id: 'pillpop', l: 'Pill popover', d: 'Where your work is, in words.', th: { pill: 'ok', pres: 'peers', rail: 1, pop: 'pill' }, go: () => { setScene('live'); later(openPillPop, 250); } },
+  { id: 'fmt', l: 'Floating format bar', d: 'Glass, over a non-empty selection.', th: { pill: 'ok', pres: 'peers', rail: 1, pop: 'fmt', sel: 1 }, go: () => { setScene('live'); later(() => { lsel.scrollIntoView({ block: 'center' }); pulse(fmt); }, 250); } },
+  { id: 'light', l: 'Light theme', d: 'Same tokens, mirrored.', th: { pill: 'ok', pres: 'peers', rail: 1, light: 1, carets: 1 }, go: () => { setScene('live'); setTheme(true); } },
+  { id: 'flat', l: 'Reduced transparency', d: 'Glass becomes opaque panels; ground drift off.', th: { pill: 'ok', pres: 'peers', rail: 1, flat: 1 }, go: () => { setScene('live'); setFlat(true); } },
+];
+function thumb(t) {
+  const hue = k => `style="--hue:var(--${k})"`, av = k => `<i style="--hue:var(--${k})"></i>`;
+  const pres = t.pres === 'peers' ? av('p4') + av('p1') + av('p6') : t.pres === 'ghost' ? av('p4') + '<i class="g"></i>' : av('p4');
+  const railInner = t.rail === 'hist' ? '<i></i><i class="sl"></i><i></i>' : `<i></i><i></i><i ${t.strip ? 'class="f" ' + hue(t.strip === 'ok' ? 'ok' : t.strip) : ''}></i>`;
+  return `<div class="th ${t.light ? 'light' : ''} ${t.flat ? 'flat' : ''} ${t.rail ? '' : 'norail'} ${t.hi ? 'hi' : ''}" aria-hidden="true">
+    <i class="th-top"></i><span class="th-pres">${pres}</span>
+    ${t.strip ? `<i class="th-strip" ${hue(t.strip)}></i>` : ''}
+    <div class="th-page ${t.mode || ''} ${t.follow ? 'follow' : ''}"><i class="h"></i><i></i><i></i><i></i><i></i><i></i>
+      ${t.carets ? '<i class="th-caret" style="--hue:var(--p1);left:48%;top:42%"></i><i class="th-caret" style="--hue:var(--p6);left:30%;top:64%"></i>' : ''}
+      ${t.sel ? '<i class="th-sel" style="left:30%;top:47%;width:28%"></i>' : ''}</div>
+    ${t.mode === 'error' ? '<i class="th-err"></i>' : ''}
+    ${t.rail ? `<span class="th-rail">${railInner}</span>` : ''}
+    <i class="th-pill ${t.wide ? 'wide' : ''}" ${hue(t.pill)}></i>
+    ${t.pop ? `<i class="th-pop th-pop--${t.pop}"></i>` : ''}</div>`;
+}
+$('#cards').innerHTML = SCREENS.map(s => `<button class="card" data-go="${s.id}">${thumb(s.th)}<b>${s.l}</b><span>${s.d}</span></button>`).join('');
+$('#map-nscreens').textContent = SCREENS.length;
+$('#cards').addEventListener('click', e => { const b = e.target.closest('[data-go]'); if (!b) return; const s = SCREENS.find(x => x.id === b.dataset.go); closeMap(); exitFlow(); s.go(); });
+
+/* Flows: each step is a full statement of state (so Prev/Next and jumping into the middle all land somewhere true) */
+const withN = (d, n) => { /* offline/reconnected scene with n local edits instead of 31 */
+  const stale = A - 31, mine = stale + n;
+  if (d.lanes[0].sv.a !== undefined) d.lanes[0] = { ...d.lanes[0], sv: { ...d.lanes[0].sv, a: mine } };
+  d.pill = { ...d.pill, text: d.pill.text.replace('31', String(n)) };
+  if (d.footer && d.footer.k === 'sync') d.footer = { ...d.footer, text: `A ≠ B · ${n} ops in flight` };
+  if (d.then) { d.then.lanes = d.then.lanes.map(l => ({ ...l, sv: { ...l.sv, a: mine } })); d.then.notice = { ...d.then.notice, text: `Back online — ${n} offline edits merged.` }; }
+  return d;
+};
+const offlineFresh = d => { d.lanes[0] = { ...d.lanes[0], sv: { ...d.lanes[1].sv }, pat: 'aabacaabacba' }; d.pill = { ...d.pill, text: 'Offline · 0 changes on this device' }; d.footer = { k: 'ok', text: 'A ≡ B ✓ converged' }; };
+const FLOWS = [
+  { id: 'F1', t: 'Open and type together', steps: [
+    { t: 'Open the document', c: 'Both windows open <b>/d/k7m2p9qa</b>. Pill: <b>Saved</b> — every change is on the server.', run: () => { setScene('live'); window.scrollTo({ top: 0 }); } },
+    { t: 'Carets appear', c: 'Mara and Tomas are here. Carets are anchored to item ids, so they stay attached to the right character during concurrent edits.', run: () => { setScene('live'); later(() => { carets.b.el.scrollIntoView({ block: 'center', behavior: 'smooth' }); flag(carets.b); flag(carets.c); }, 200); } },
+    { t: 'Type a line', c: 'You type; the pill says <b>Syncing · 2</b> while ops are in flight, then <b>Saved</b> once the server acks. Never “Saving…” without a place.', run: () => { setScene('live'); later(() => { setPill({ k: 'sync', text: 'Syncing · 2', icon: 'sync', pop: { body: '2 changes are on this device and in flight.' } }); renderLanes(currentLanes, { k: 'sync', text: 'A ≠ B · 2 ops in flight' }); }, 300); later(() => { setPill(currentPill); renderLanes(currentLanes, currentFooter); }, 1500); } },
+  ] },
+  { id: 'F2', t: 'Go offline and type at the same spot', steps: [
+    { t: 'Live, two peers', c: 'Both replicas converged: <b>A ≡ B ✓</b>. The Inspector shows one lane per replica.', run: () => { setScene('live'); openRail(true); } },
+    { t: 'Simulate offline', c: 'Flip <b>Simulate offline</b> in Chaos — it closes the socket for real. Pill goes amber; peers collapse to a ghost avatar: <b>Peers unknown</b>.', run: () => { setScene('offline', offlineFresh); openRail(true); pulse($('#sw-offline')); } },
+    { t: 'Type at the end of paragraph 2', c: 'Every keystroke lands in IndexedDB. The pill counts them: <b>Offline · 31 changes on this device</b>. Mara types a different sentence at the same spot in her window.', run: () => {
+      setScene('offline', offlineFresh); openRail(true); const stale = A - 31;
+      countUp(31, 1600, n => { pillTxt.textContent = `Offline · ${n} changes on this device`; currentPill = { ...currentPill, text: pillTxt.textContent };
+        const lanes = currentLanes.map((l, i) => i ? l : { ...l, sv: { ...l.sv, a: stale + n }, pat: 'aaaaaaaaaaaa' }); renderLanes(lanes, { k: 'sync', text: `A ≠ B · ${n} ops in flight` }); }); } },
+    { t: 'Inspector lanes diverge', c: 'Lane <b>a</b> is 31 ops ahead; <b>b</b> and <b>c</b> are stale (last seen 4 min ago). Footer: <b>A ≠ B · 31 ops in flight</b>.', run: () => { setScene('offline'); openRail(true); later(flashLanes, 350); } },
+  ] },
+  { id: 'F3', t: 'Reconnect and converge', steps: [
+    { t: 'Offline with 31 local edits', c: 'A has been dark; 31 edits are on this device only. B has 8 edits A has never seen.', run: () => { setScene('offline'); openRail(true); } },
+    { t: 'Flip back online', c: 'The state-vector diff says exactly what to exchange: <b>Catching up · 12 in, 31 out</b>. Nobody re-sends the world.', run: () => { setScene('reconnected', d => { d.then = null; }); openRail(true); } },
+    { t: 'Ops flow both ways', c: 'Both documents snap to the same text, sentences intact and not interleaved. Strip: <b>Back online — 31 offline edits merged.</b>', run: () => { setScene('reconnected', d => { d.then.after = 350; }); openRail(true); } },
+    { t: 'Converged', c: 'Footer <b>A ≡ B ✓ converged</b>; both hashes green — because the server’s <b>converged</b> message carried matching hashes, not because a timer fired.', run: () => { setScene('reconnected', d => { Object.assign(d, { pill: d.then.pill, lanes: d.then.lanes, footer: d.then.footer, notice: d.then.notice }); d.then = null; }); openRail(true); later(flashLanes, 350); } },
+  ] },
+  { id: 'F4', t: 'Kill the tab, reopen', steps: [
+    { t: 'Offline, typing mid-word', c: 'Simulate offline again and type. Seven keystrokes in: <b>Offline · 7 changes on this device</b>.', run: () => { setScene('offline', d => withN(d, 7)); } },
+    { t: 'Kill the tab', c: 'Close the tab mid-word. No save, no flush. At most one keystroke is at risk: the one whose IndexedDB transaction had not yet committed (design §4.3).', run: () => { setScene('offline', d => withN(d, 7)); $('#killed').hidden = false; } },
+    { t: 'Reopen the URL', c: 'Three skeleton lines while the snapshot is restored from IndexedDB. Pill: <b>Connecting…</b> — the socket is not up yet.', run: () => setScene('loading') },
+    { t: 'Document restored', c: 'The tree is rebuilt from snapshot + op log. The half-typed word is there. Pill: <b>Offline · 7 changes on this device</b> — the unsent ops survived the kill.', run: () => { setScene('offline', d => withN(d, 7)); openRail(true); } },
+    { t: 'Go online', c: '<b>Catching up · 12 in, 7 out</b>, then the strip: <b>Back online — 7 offline edits merged.</b> Pill: <b>Saved</b>.', run: () => { setScene('reconnected', d => withN(d, 7)); openRail(true); } },
+  ] },
+  { id: 'F5', t: 'Divergence tripwire', steps: [
+    { t: 'Live, converged', c: 'Equal state vectors, equal content hashes. Invariant I5 is checked on every <b>converged</b> message.', run: () => { setScene('live'); openRail(true); } },
+    { t: 'Hashes differ', c: 'Same state vectors, different hashes: the tripwire fires. Pill <b>Diverged — report</b>; the strip is <b>role="alert"</b> and persists until dismissed. Never hidden.', run: () => { setScene('diverged'); openRail(true); later(flashLanes, 350); } },
+    { t: 'Show both hashes', c: 'The pill popover shows both hashes. The Inspector lane for <b>b</b> shows its hash in red.', run: () => { setScene('diverged'); openRail(true); later(openPillPop, 250); } },
+    { t: 'Copy report', c: '<b>Copy report</b> puts both state vectors, both hashes and a timestamp on the clipboard. Nothing was lost; this is a bug and it has been logged locally.', run: () => { setScene('diverged'); openRail(true); later(() => pulse($('#n-action')), 250); } },
+  ] },
+  { id: 'F6', t: 'Follow a peer', steps: [
+    { t: 'Live, Mara and Tomas here', c: 'Presence is drawn from the server’s awareness messages; the stack shows self plus up to four peers.', run: () => { setScene('live'); later(() => { flag(carets.b); flag(carets.c); }, 200); } },
+    { t: 'Open presence', c: 'Who is here, which replica they are, and what they are doing. Each peer has a <b>Follow</b> button.', run: () => { setScene('live'); later(openPres, 250); } },
+    { t: 'Follow Mara', c: 'The viewport tracks Mara’s caret. The editor gets a <b>2 px frame in her colour</b> and a tag at the top.', run: () => { setScene('live'); later(() => follow('b'), 200); } },
+    { t: 'Any keystroke exits', c: 'You typed (or scrolled): follow ends, the frame is gone. Nothing modal about it.', run: () => { setScene('live'); } },
+  ] },
+  { id: 'F7', t: 'Format text', steps: [
+    { t: 'Select a phrase', c: 'Drag over <b>“sort by id”</b> in paragraph 1. The selection is local; peers see it in your hue at 25% alpha.', run: () => { setScene('live'); later(() => { lsel.scrollIntoView({ block: 'center' }); pulse(lsel); }, 200); } },
+    { t: 'Format bar appears', c: 'The glass bar floats over the selection: <b>B</b> <b>I</b> code link · ¶ H1 H2 H3 list quote. Disabled items are dimmed, not hidden.', run: () => { setScene('live'); later(() => { lsel.scrollIntoView({ block: 'center' }); pulse(fmt); }, 200); } },
+    { t: 'Bold applied', c: '<b>Ctrl+B</b>. A mark op wraps the range; the bar shows <b>B</b> pressed. Formatting is a range over item ids, so it survives concurrent edits (with the documented anomaly, design §2.5).', run: () => { setScene('live'); later(() => { lsel.scrollIntoView({ block: 'center' }); setBold(true); }, 200); } },
+  ] },
+  { id: 'F8', t: 'Time-travel', steps: [
+    { t: 'Live · latest', c: 'The History slider sits at the last op. The page is the fold of the whole log.', run: () => { setScene('live'); openRail(true); goLatest(); } },
+    { t: 'Show authors', c: 'Per-author underline in each replica’s hue: which words came from which device.', run: () => { setScene('live'); openRail(true); goLatest(); $('#authors').checked = true; docEl.dataset.authorView = '1'; } },
+    { t: 'Scrub back 40 ops', c: 'The slider moves; the page re-renders <b>fold(apply, ∅, ops[0..n])</b> at every position. Read-only while you are in the past.', run: () => { setScene('live'); openRail(true); goLatest(); later(() => scrubTo(TOTAL - 40), 250); } },
+    { t: 'Forward to latest', c: 'Back to the head. The op log <b>is</b> the document. Named versions and restore are not in v1.', run: () => { setScene('live'); openRail(true); tt.value = TOTAL - 40; replay(TOTAL - 40); later(() => scrubTo(TOTAL), 250); } },
+  ] },
+  { id: 'F9', t: 'Storage may be evicted', steps: [
+    { t: 'persist() returned false', c: 'Alone on the document. <b>navigator.storage.persist()</b> said no, so the pill carries the suffix and the strip offers <b>Ask to persist</b>.', run: () => { setScene('alone'); later(() => pulse($('#n-action')), 250); } },
+    { t: 'The browser declines', c: 'Honest copy, no pretending: Weft still saves here; the browser may reclaim the space under disk pressure. <b>Ask again</b> stays available.', run: () => { setScene('alone'); setNotice(NOTICE_DECLINED); } },
+    { t: 'The browser grants it', c: 'The strip resolves to <b>Storage persisted</b> and the pill drops its suffix. Both outcomes are shown; neither is silent.', run: () => { setScene('alone'); setNotice(NOTICE_PERSISTED); currentPill = { ...currentPill, suffix: '' }; setPill(currentPill); } },
+  ] },
+  { id: 'F10', t: 'Version mismatch / fatal error', steps: [
+    { t: 'Reconnecting', c: 'The relay was redeployed. The tab reconnects and sends <b>hello {"proto":1}</b>.', run: () => setScene('loading') },
+    { t: 'Protocol mismatch', c: 'An opaque card on the paper with the real handshake: <b>This server speaks protocol v2; this tab speaks v1. Your work is safe on this device.</b> Never silently blank.', run: () => { setScene('mismatch'); openRail(true); } },
+    { t: 'Retry', c: '<b>Retry</b> re-runs the handshake. Same answer: the pill stays honest — <b>Can’t connect · protocol v2</b> — and nothing is sent.', run: () => { setScene('loading'); later(() => setScene('mismatch'), 1200); } },
+    { t: 'Start fresh (keeps a copy)', c: 'A new empty document. The previous one stays on this device under its id, untouched.', run: () => { setScene('empty', d => { d.notice = { k: 'ok', icon: 'db', text: 'Started fresh. The previous document is kept on this device as weft:k7m2p9qa.' }; }); } },
+  ] },
+  { id: 'F11', t: '⌘K palette', steps: [
+    { t: 'Open ⌘K', c: 'A real <b>&lt;dialog&gt;</b>: focus trapped, Esc closes, focus returns. Groups: Document · Collaboration · History · Debug.', run: () => { setScene('live'); later(openK, 150); } },
+    { t: 'Filter “offline”', c: 'Type to filter. One match: <b>Debug › Simulate offline</b>, with its current value.', run: () => { setScene('live'); later(() => { openK(); typeInto(kin, 'offline', v => renderK(v)); }, 150); } },
+    { t: 'Run Simulate offline', c: 'Enter runs it: the dialog closes, the socket closes for real, the pill goes amber. The palette is a front door to the same chaos controls the tests use.', run: () => { setScene('live'); later(() => { openK(); kin.value = 'offline'; renderK('offline'); }, 150); later(() => runK(0), 900); } },
+  ] },
+  { id: 'F12', t: 'Light theme and reduced transparency', steps: [
+    { t: 'Dark, glass', c: 'Dark-first tokens; three glass panes at most (top bar, pill, one transient) over the drifting ground.', run: () => { setScene('live'); resetLook(); } },
+    { t: 'Light theme', c: 'The same tokens, mirrored: paper goes to near-white, glass fill inverts, hues stay put. Toggle lives in ⌘K › Theme.', run: () => { setScene('live'); setFlat(false); setTheme(true); } },
+    { t: 'Reduce transparency', c: 'Glass becomes opaque <b>--raised</b> panels and the ground stops drifting. Manual because <b>prefers-reduced-transparency</b> is not Baseline yet.', run: () => { setScene('live'); setTheme(true); setFlat(true); } },
+    { t: 'Back to dark glass', c: 'Both toggles off. Nothing depends on the glass or the motion to be understood.', run: () => { setScene('live'); resetLook(); } },
+  ] },
+];
+$('#flows').innerHTML = FLOWS.map(f => `<div class="flow" id="flow-${f.id}"><div class="flow-h"><span class="fid">${f.id} · ${f.steps.length} steps</span><b>${f.t}</b>
+  <button class="play" data-flow="${f.id}" data-step="0"><svg class="i"><use href="#i-eye"/></svg>Play</button></div>
+  <ol class="steps">${f.steps.map((s, i) => `<li><button data-flow="${f.id}" data-step="${i}"><span class="n">${i + 1}</span><span>${s.t}</span></button></li>`).join('')}</ol></div>`).join('');
+$('#map-nflows').textContent = FLOWS.length;
+$('#flows').addEventListener('click', e => { const b = e.target.closest('[data-flow]'); if (b) startFlow(b.dataset.flow, +b.dataset.step); });
+
+function openMap() { closeK(); closePops(); mapReturnFocus = document.activeElement; mapEl.hidden = false; $('#pb-map').setAttribute('aria-pressed', 'true'); $('#map-close').focus(); }
+function closeMap() { if (mapEl.hidden) return; mapEl.hidden = true; $('#pb-map').setAttribute('aria-pressed', 'false'); if (mapReturnFocus && mapReturnFocus.focus && document.contains(mapReturnFocus) && !mapReturnFocus.closest('.map')) mapReturnFocus.focus(); }
+$('#pb-map').addEventListener('click', () => mapEl.hidden ? openMap() : closeMap());
+$('#map-close').addEventListener('click', () => { closeMap(); if (!flow) setScene('live'); });
+
+/* Flow runner + bottom bar */
+const flowbar = $('#flowbar'); let flow = null, step = 0;
+function startFlow(id, i = 0) { flow = FLOWS.find(f => f.id === id); closeMap(); flowbar.hidden = false; $('#weft-app').classList.add('flow-on'); goStep(i); }
+function goStep(i) {
+  step = Math.max(0, Math.min(flow.steps.length - 1, i)); const s = flow.steps[step], last = step === flow.steps.length - 1;
+  closeK(); $('#killed').hidden = true; s.run();
+  $('#fb-id').textContent = flow.id; $('#fb-title').textContent = flow.t; $('#fb-n').textContent = `${step + 1}/${flow.steps.length}`;
+  $('#fb-cap').innerHTML = `<b>${s.t}.</b> ${s.c}`;
+  $('#fb-prev').disabled = step === 0; $('#fb-next').textContent = last ? 'Back to map' : 'Next';
+  $$(`#flow-${flow.id} .steps li`).forEach((li, k) => k === step ? li.setAttribute('aria-current', 'step') : li.removeAttribute('aria-current'));
+}
+function nextStep() { if (!flow) return; if (step < flow.steps.length - 1) goStep(step + 1); else { exitFlow(); openMap(); } }
+function prevStep() { if (flow && step > 0) goStep(step - 1); }
+function exitFlow() { if (!flow) return; $$(`#flow-${flow.id} .steps li`).forEach(li => li.removeAttribute('aria-current')); flow = null; flowbar.hidden = true; $('#weft-app').classList.remove('flow-on'); }
+$('#fb-next').addEventListener('click', nextStep); $('#fb-prev').addEventListener('click', prevStep);
+$('#fb-map').addEventListener('click', openMap); $('#fb-x').addEventListener('click', exitFlow);
+
+/* ===== 16. Init ===== */
+/* Theme: honour a host-stamped data-theme; otherwise stamp the system preference so the toggle label is truthful. */
+if (!root.dataset.theme) root.dataset.theme = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+setTheme(isLight()); setFlat(isFlat());
+setDrop(3); replay(TOTAL); setScene('live'); openMap();
+})();
+</script>

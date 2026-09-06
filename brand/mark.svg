@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Weft">
+  <title>Weft</title>
+  <!--
+    The mark: a weave. Two warp threads and two weft threads crossing over and
+    under, drawn as one continuous interlace — no thread is cut where another
+    passes, and no crossing resolves by one thread winning.
+
+    That is the product. A CRDT has no central lock and no last-writer-wins:
+    concurrent edits interleave and both survive. A mark where one bar was
+    simply painted over the other would be a picture of the thing Weft refuses
+    to do, so the over-under is real, not implied.
+
+    Palette:
+      #0A0C0E ink · #2ED3C6 weft (teal) · #4F7DF3 warp (indigo) · #E8F6F4 bone
+
+    Built in the same three planes as the Zeno mark, so the two read as siblings:
+      1. the cast  — deepest edge, ink, where the cloth meets its ground
+      2. the flank — the extruded side, offset down-right
+      3. the face  — the front plane, in thread colour, with a light edge
+  -->
+  <defs>
+    <linearGradient id="weft" x1="0" y1="0" x2="1" y2="0.4">
+      <stop offset="0" stop-color="#4EE8DA"/>
+      <stop offset="0.5" stop-color="#2ED3C6"/>
+      <stop offset="1" stop-color="#17A79C"/>
+    </linearGradient>
+    <linearGradient id="warp" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#6E93F7"/>
+      <stop offset="0.5" stop-color="#4F7DF3"/>
+      <stop offset="1" stop-color="#2E55C4"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="0.7">
+      <stop offset="0" stop-color="#E8F6F4" stop-opacity="0.55"/>
+      <stop offset="0.6" stop-color="#E8F6F4" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#E8F6F4" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="56" fill="#0A0C0E"/>
+
+  <!-- the depth planes: the whole weave, twice, in flat dark, offset back -->
+  <g fill="#05070A">
+    <rect x="53" y="89" width="176" height="32" rx="16"/>
+    <rect x="53" y="161" width="176" height="32" rx="16"/>
+    <rect x="89" y="53" width="32" height="176" rx="16"/>
+    <rect x="161" y="53" width="32" height="176" rx="16"/>
+  </g>
+  <g fill="#132A3D">
+    <rect x="47" y="83" width="176" height="32" rx="16"/>
+    <rect x="47" y="155" width="176" height="32" rx="16"/>
+    <rect x="83" y="47" width="32" height="176" rx="16"/>
+    <rect x="155" y="47" width="32" height="176" rx="16"/>
+  </g>
+
+  <!--
+    The face, drawn in the order the interlace requires. Paint order IS the
+    over-under: warp-left rides over weft-top, then weft-bottom rides over
+    warp-left, then warp-right rides over weft-bottom — and the final patch
+    restores weft-top above warp-right, closing the alternation. Remove the
+    patch and the weave becomes a stack.
+  -->
+  <rect x="40" y="76" width="176" height="32" rx="16" fill="url(#weft)"/>
+  <rect x="76" y="40" width="32" height="176" rx="16" fill="url(#warp)"/>
+  <rect x="40" y="148" width="176" height="32" rx="16" fill="url(#weft)"/>
+  <rect x="148" y="40" width="32" height="176" rx="16" fill="url(#warp)"/>
+  <rect x="148" y="76" width="32" height="32" fill="url(#weft)"/>
+
+  <!-- the light catching the top-left of the cloth -->
+  <rect x="40" y="76" width="176" height="13" rx="6" fill="url(#sheen)"/>
+  <rect x="76" y="40" width="13" height="176" rx="6" fill="url(#sheen)"/>
+</svg>

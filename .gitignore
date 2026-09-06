@@ -1,0 +1,23 @@
+# secrets — never
+.env
+.env.*
+*.pem
+*.key
+
+# build output and dependencies (arrive with Gate 3)
+node_modules/
+dist/
+coverage/
+.vite/
+
+# local data written by the server (per-document append logs)
+data/
+
+# OS / editor noise
+Thumbs.db
+.DS_Store
+.vscode/settings.json
+
+# Playwright e2e output
+playwright-report/
+test-results/

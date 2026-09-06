@@ -1,0 +1,42 @@
+# Weft CI.
+# Two jobs. `docs` is the check that has been true since the design phase: every relative link in
+# the documents resolves. `check` is the six-gate build gate from LLD §9 — typecheck → lint
+# (eslint + lint-deps + lint-pure) → tests with coverage thresholds that fail the run → bench
+# budget → browser e2e flows (Playwright, Chromium only, against the real relay) — on both OSes
+# the project targets. CI=1 makes the property tests run 10 000 cases.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  docs:
+    name: docs links resolve
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node tools/check-docs.mjs
+
+  check:
+    name: check (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      CI: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run check

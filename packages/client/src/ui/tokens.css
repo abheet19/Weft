@@ -1,0 +1,63 @@
+/* tokens.css — 03-UI.md §2.2, copied verbatim from docs/prototype/weft.html section 1 (the
+   prototype expands the "same as light block" comment of §2.2 into the actual light values) plus
+   the prototype-only additions of section 1b, which the build keeps: --gl-inner is the ≥60%-alpha
+   inner fill every text label inside glass sits on (§2.1). One change, marked below: --proto-h (the
+   prototype scene bar height) is not ported because the scene bar is not part of the product. */
+:root {
+  /* ground & surfaces */
+  --bg:        oklch(15% 0.012 250);   /* dark navy-grey, never pure black */
+  --paper:     oklch(20% 0.010 250);   /* editor page */
+  --raised:    oklch(25% 0.010 250);   /* panels */
+  --line:      oklch(32% 0.012 250);
+  --ink:       oklch(94% 0.008 90);    /* warm off-white text */
+  --ink-2:     oklch(72% 0.010 250);
+  --ink-3:     oklch(56% 0.012 250);
+
+  /* one accent, plus the four state hues */
+  --accent:    oklch(78% 0.14 200);    /* teal */
+  --ok:        oklch(76% 0.15 150);    /* saved */
+  --sync:      oklch(76% 0.12 240);    /* syncing */
+  --warn:      oklch(80% 0.15 75);     /* offline / reconnecting */
+  --bad:       oklch(70% 0.19 25);     /* divergence / error */
+
+  /* glass */
+  --gl-fill:   oklch(22% 0.012 250 / .55);
+  --gl-edge:   oklch(100% 0 0 / .12);
+  --gl-spec:   oklch(100% 0 0 / .32);
+  --gl-blur:   blur(14px) saturate(1.4);
+  --gl-shadow: inset 0 1px 0 var(--gl-spec), 0 10px 30px -12px oklch(0% 0 0 / .6);
+
+  /* presence palette: 8 hues, equal L/C, 45° apart — assigned by replica id */
+  --p0: oklch(75% 0.16 20);  --p1: oklch(75% 0.16 65);  --p2: oklch(75% 0.16 110); --p3: oklch(75% 0.16 155);
+  --p4: oklch(75% 0.16 200); --p5: oklch(75% 0.16 245); --p6: oklch(75% 0.16 290); --p7: oklch(75% 0.16 335);
+
+  /* type */
+  --font-ui:   "Geist", "Inter", system-ui, sans-serif;
+  --font-doc:  "Newsreader", Georgia, serif;          /* the editor body: reads like a page */
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --fs-0: clamp(.8rem, .78rem + .1vw, .875rem);  --fs-1: clamp(.9rem, .85rem + .2vw, 1rem);
+  --fs-2: clamp(1.05rem, 1rem + .3vw, 1.2rem);   --fs-doc: clamp(1.05rem, 1rem + .35vw, 1.25rem);
+
+  /* radius, motion */
+  --r-1: 8px; --r-2: 12px; --r-3: 18px; --r-pill: 999px;
+  --t-fast: 120ms; --t-base: 220ms; --t-slow: 400ms;
+  --ease: cubic-bezier(.2,.8,.2,1);
+}
+:root[data-theme="light"] { --bg: oklch(97% 0.006 90); --paper: oklch(99.5% 0.003 90); --raised: oklch(96% 0.006 90);
+  --line: oklch(88% 0.008 90); --ink: oklch(20% 0.01 250); --ink-2: oklch(42% 0.01 250); --ink-3: oklch(58% 0.01 250);
+  --gl-fill: oklch(100% 0 0 / .55); --gl-edge: oklch(20% 0.01 250 / .10); --gl-spec: oklch(100% 0 0 / .9); }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg: oklch(97% 0.006 90); --paper: oklch(99.5% 0.003 90); --raised: oklch(96% 0.006 90);
+  --line: oklch(88% 0.008 90); --ink: oklch(20% 0.01 250); --ink-2: oklch(42% 0.01 250); --ink-3: oklch(58% 0.01 250);
+  --gl-fill: oklch(100% 0 0 / .55); --gl-edge: oklch(20% 0.01 250 / .10); --gl-spec: oklch(100% 0 0 / .9); } }
+@supports not (backdrop-filter: blur(1px)) { .glass { background: var(--raised) } }
+@media (prefers-reduced-transparency: reduce) { .glass { backdrop-filter: none; background: var(--raised) } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition-duration: 0ms !important } }
+
+/* 1b. Prototype-only additions (not in the spec; the build may keep them).
+   --gl-inner is the >=60%-alpha inner fill every text label inside glass sits on (§2.1). */
+:root { --gl-inner: oklch(19% 0.012 250 / .68); --on-hue: oklch(15% 0.02 250);
+        --top-h: 52px; --rail-w: 328px; color-scheme: dark; } /* --proto-h dropped: no prototype scene bar in the product */
+:root[data-theme="light"] { --gl-inner: oklch(100% 0 0 / .74); color-scheme: light; }
+/* Manual "Reduce transparency" (⌘K) — prefers-reduced-transparency is not Baseline yet */
+:root[data-flat="1"] .glass { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--raised); }
+:root[data-flat="1"] .blob { display: none }

@@ -1,0 +1,22 @@
+{
+  "name": "@weft/server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Weft's relay: a WebSocket server that validates, appends to a per-document durable log, acknowledges after fsync and fans out. It never interprets documents and never imports @weft/crdt.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/wsServer.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run --coverage",
+    "start": "node src/main.ts"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

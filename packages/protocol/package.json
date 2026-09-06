@@ -1,0 +1,18 @@
+{
+  "name": "@weft/protocol",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Weft's wire protocol: message types, limits, error codes, total validators and the JSON codec. Pure: no IO, no clock, no randomness, no runtime dependencies.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run --coverage"
+  }
+}

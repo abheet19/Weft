@@ -29,10 +29,10 @@ import { errorCard, NOTICE, type Failure } from './copy.ts';
 import { History } from './History.tsx';
 import { HistoryDoc } from './HistoryDoc.tsx';
 import { Icon, IconSprite } from './Icons.tsx';
-import { Inspector } from './Inspector.tsx';
 import { Notice, type NoticeModel } from './Notice.tsx';
 import { Page, type PageMode } from './Page.tsx';
 import { Presence } from './Presence.tsx';
+import { Sidebar, type OutlineItem } from './Sidebar.tsx';
 import { StatusPill } from './StatusPill.tsx';
 import { useSession } from './useSession.ts';
 
@@ -64,6 +64,7 @@ export function Shell({ url, docId }: ShellProps): React.JSX.Element {
   const [notices, setNotices] = useState<readonly NoticeModel[]>([]);
   const [railOpen, setRailOpen] = useState(true);
   const [follow, setFollow] = useState<ReplicaId | null>(null);
+  const [outline, setOutline] = useState<readonly OutlineItem[]>([]);
   /** The time-travel slider position; null when live (not scrubbing). While scrubbing the page is read-only (03-UI §4.6). */
   const [historyPos, setHistoryPos] = useState<number | null>(null);
   const [showAuthors, setShowAuthors] = useState(false);
@@ -104,6 +105,13 @@ export function Shell({ url, docId }: ShellProps): React.JSX.Element {
   const runner = ready?.session.runner ?? null;
   const reportCursor = useCallback((cursor: PresenceState['cursor']) => runner?.setCursor(cursor), [runner]);
   const onFollow = useCallback((replica: ReplicaId) => setFollow((was) => (was === replica ? null : replica)), []);
+  /** Outline jump: move the caret to the heading's start and scroll it into view. */
+  const onJump = useCallback((pos: number) => {
+    const view = viewRef.current;
+    if (view === null) return;
+    view.dispatch(view.state.tr.setSelection(Selection.near(view.state.doc.resolve(Math.min(pos, view.state.doc.content.size)))).scrollIntoView());
+    view.focus();
+  }, []);
 
   const session = ready === null ? initialSession : ready.snapshot.session;
   const failure: Failure | null = state.phase === 'error' ? { kind: 'load', docId, error: state.error } : ready !== null && session.s === 'failed' ? { kind: 'session', state: session, supported: ready.snapshot.supported } : null;
@@ -201,7 +209,7 @@ export function Shell({ url, docId }: ShellProps): React.JSX.Element {
         <span className="grow" />
         {self !== null && ready !== null && <Presence self={self} peers={ready.snapshot.peers} connected={connected} follow={follow} onFollow={onFollow} />}
         {commands !== null && <CommandPalette commands={commands} />}
-        <button type="button" className="gbtn icon" aria-label="Toggle Sync Inspector" aria-expanded={railOpen} onClick={() => setRailOpen((was) => !was)}>
+        <button type="button" className="gbtn icon" aria-label="Toggle sidebar" aria-expanded={railOpen} onClick={() => setRailOpen((was) => !was)}>
           <Icon name="panel" />
         </button>
       </header>
@@ -223,11 +231,15 @@ export function Shell({ url, docId }: ShellProps): React.JSX.Element {
             {ready !== null && scrubbing ? (
               <HistoryDoc base={ready.session.runner.history().base} ops={ready.session.runner.history().ops} position={historyPos ?? historyLength} showAuthors={showAuthors} />
             ) : (
-              ready !== null && <Editor host={ready.host} onFault={onFault} peers={ready.snapshot.peers} reportCursor={reportCursor} follow={follow} onExitFollow={() => setFollow(null)} onView={(view) => (viewRef.current = view)} />
+              ready !== null && (
+                <Editor host={ready.host} onFault={onFault} peers={ready.snapshot.peers} reportCursor={reportCursor} follow={follow} onExitFollow={() => setFollow(null)} onView={(view) => (viewRef.current = view)} onOutline={setOutline} />
+              )
             )}
           </Page>
         </div>
-        {railOpen && ready !== null && self !== null && <Inspector self={self} snapshot={ready.snapshot} session={ready.session} userOffline={userOffline} historyPanel={historyPanel} />}
+        {railOpen && ready !== null && self !== null && (
+          <Sidebar self={self} snapshot={ready.snapshot} session={ready.session} userOffline={userOffline} connected={connected} outline={outline} onJump={onJump} follow={follow} onFollow={onFollow} historyPanel={historyPanel} />
+        )}
       </main>
       <StatusPill session={session} storage={ready === null ? { kind: 'idb' } : ready.storage} onRetry={retry} />
     </>

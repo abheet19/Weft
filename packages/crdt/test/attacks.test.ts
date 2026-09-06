@@ -104,7 +104,8 @@ describe('attacks from LLD §8, slice S1', () => {
     const boundary = id(R.a, 2);
     const bad: Op[] = [
       { ...fmt(id(R.b, 1), [target], 'bold', true, 1), mark: '__proto__' as 'bold' },
-      { ...fmt(id(R.b, 1), [target], 'bold', true, 1), mark: 'underline' as 'bold' },
+      { ...fmt(id(R.b, 1), [target], 'bold', true, 1), mark: 'blink' as 'bold' },
+      { ...fmt(id(R.b, 1), [target], 'textColor', true, 1), value: 9 as unknown as string },
       { ...fmt(id(R.b, 1), [target], 'bold', true, 1), active: 'yes' as unknown as boolean },
       { ...fmt(id(R.b, 1), [target], 'bold', true, Number.NaN) },
       { ...fmt(id(R.b, 1), [target], 'link', true, 1), href: 7 as unknown as string },

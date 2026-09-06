@@ -41,8 +41,13 @@ export const brk = (): Content => ({ kind: 'break' });
 type OpOf<T extends Op['t']> = Extract<Op, { t: T }>;
 export const ins = (me: ItemId, parent: ItemId, side: 'L' | 'R', content: Content = char('x')): OpOf<'ins'> => ({ t: 'ins', id: me, parent, side, content });
 export const del = (me: ItemId, target: ItemId): OpOf<'del'> => ({ t: 'del', id: me, target });
-export const fmt = (me: ItemId, targets: readonly ItemId[], mark: MarkName, active: boolean, lamport: number, href?: string): OpOf<'fmt'> =>
-  href === undefined ? { t: 'fmt', id: me, targets, mark, active, lamport } : { t: 'fmt', id: me, targets, mark, active, lamport, href };
+/** `value` rides a link as its `href` and a colour mark as its `value`; every other mark ignores it. */
+export const fmt = (me: ItemId, targets: readonly ItemId[], mark: MarkName, active: boolean, lamport: number, value?: string): OpOf<'fmt'> => {
+  if (value === undefined) return { t: 'fmt', id: me, targets, mark, active, lamport };
+  if (mark === 'link') return { t: 'fmt', id: me, targets, mark, active, lamport, href: value };
+  if (mark === 'textColor' || mark === 'highlightColor') return { t: 'fmt', id: me, targets, mark, active, lamport, value };
+  return { t: 'fmt', id: me, targets, mark, active, lamport };
+};
 export const blk = (me: ItemId, target: ItemId, attrs: BlockAttrs, lamport: number): OpOf<'blk'> => ({ t: 'blk', id: me, target, attrs, lamport });
 
 /** The visible sequence as text; block boundaries print as ▮ so structure is visible in failures. */
@@ -118,8 +123,8 @@ export class Replica {
     return this.emit(localDelete(this.doc, this.me, this.seq + 1, from, to));
   }
 
-  format(from: number, to: number, mark: MarkName, active: boolean, href?: string): readonly Op[] {
-    return this.emit(localFormat(this.doc, this.me, this.seq + 1, from, to, mark, active, href));
+  format(from: number, to: number, mark: MarkName, active: boolean, value?: string): readonly Op[] {
+    return this.emit(localFormat(this.doc, this.me, this.seq + 1, from, to, mark, active, value));
   }
 
   setBlock(visibleIndexInBlock: number, attrs: BlockAttrs): readonly Op[] {

@@ -10,7 +10,7 @@ import type { BlockAttrs, Content, MarkName, Side } from './item.ts';
 export type Op =
   | { readonly t: 'ins'; readonly id: ItemId; readonly parent: ItemId; readonly side: Side; readonly content: Content }
   | { readonly t: 'del'; readonly id: ItemId; readonly target: ItemId }
-  | { readonly t: 'fmt'; readonly id: ItemId; readonly targets: readonly ItemId[]; readonly mark: MarkName; readonly active: boolean; readonly lamport: number; readonly href?: string } // ⟨D2⟩ ≤ 4096 targets
+  | { readonly t: 'fmt'; readonly id: ItemId; readonly targets: readonly ItemId[]; readonly mark: MarkName; readonly active: boolean; readonly lamport: number; readonly href?: string; readonly value?: string } // ⟨D2⟩ ≤ 4096 targets; `href` rides a link, `value` a colour mark
   | { readonly t: 'blk'; readonly id: ItemId; readonly target: ItemId; readonly attrs: BlockAttrs; readonly lamport: number };
 
 /** The ids this op cannot be applied without. Explicit so causality is a data fact, not a code path. */

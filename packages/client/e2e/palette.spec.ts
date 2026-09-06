@@ -5,7 +5,7 @@
 // second open via the top-bar button closes on Esc with focus returned to that button. Extends the
 // existing flow set; every wait is on visible state.
 import { expect, test } from '@playwright/test';
-import { editor, offlineSwitch, open, pill } from './helpers.ts';
+import { editor, offlineSwitch, open, openSync, pill } from './helpers.ts';
 
 test('F-palette: Ctrl+K opens the palette, typing "offline" then Enter runs Simulate offline and the pill goes amber', async ({ page }) => {
   const docId = `e2e-palette-${Date.now().toString(36)}`;
@@ -25,6 +25,7 @@ test('F-palette: Ctrl+K opens the palette, typing "offline" then Enter runs Simu
   await page.keyboard.press('Enter');
   await expect(dialog).toBeHidden();
   await expect(pill(page)).toHaveText('Offline · 0 changes on this device');
+  await openSync(page);
   await expect(offlineSwitch(page)).toHaveAttribute('aria-checked', 'true');
 });
 

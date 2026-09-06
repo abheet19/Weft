@@ -6,7 +6,7 @@
 export { REPLICA_ID_RE, ROOT_REPLICA, compareIds, idKey, parseIdKey, isWellFormedId } from './ids.ts';
 export type { ReplicaId, ItemId } from './ids.ts';
 
-export { ROOT, ROOT_KEY, MARK_NAMES, BLOCK_TYPES, MAX_LAMPORT, isMarkName, isBlockAttrs, isContent, isCharText } from './item.ts';
+export { ROOT, ROOT_KEY, MARK_NAMES, VALUE_MARKS, BLOCK_TYPES, MAX_LAMPORT, markValue, isMarkName, isBlockAttrs, isContent, isCharText } from './item.ts';
 export type { Side, MarkName, MarkState, MarkSet, BlockType, BlockAttrs, CharContent, BlockContent, BreakContent, Content, BlockRegister, ItemContent, Item } from './item.ts';
 
 export { siblingArray, firstSibling, siblingAfter } from './siblings.ts';

@@ -8,14 +8,16 @@
 // LLD §5.2 or a refusal in the CRDT.
 
 import { ERROR_CODES, type ErrorCode } from './errors.ts';
-import { DOC_ID_RE, HASH_RE, HREF_SCHEME_RE, LIMITS, REPLICA_ID_RE } from './limits.ts';
+import { DOC_ID_RE, HASH_RE, HREF_SCHEME_RE, LIMITS, MARK_COLOR_RE, REPLICA_ID_RE } from './limits.ts';
 import type { BlockAttrs, ClientMessage, Content, ItemAnchor, ItemContent, ItemId, MarkSet, Op, PresenceState, ServerMessage, Snapshot, SnapshotItem, StateVector } from './messages.ts';
 import { negotiate } from './version.ts';
 
 export type Valid<T> = { ok: true; value: T } | { ok: false; code: ErrorCode; reason: string };
 
-const MARK_NAMES: readonly string[] = ['bold', 'code', 'italic', 'link'];
-const BLOCK_TYPES: readonly string[] = ['paragraph', 'heading', 'bullet', 'quote'];
+const MARK_NAMES: readonly string[] = ['bold', 'code', 'highlight', 'highlightColor', 'italic', 'link', 'strikethrough', 'textColor', 'underline'];
+/** The marks that carry a `value`; a link carries its `href` under the separate `href` field. */
+const COLOR_MARKS: readonly string[] = ['textColor', 'highlightColor'];
+const BLOCK_TYPES: readonly string[] = ['paragraph', 'heading', 'bullet', 'ordered', 'check', 'quote', 'code', 'divider'];
 /** The one id with seq 0 that exists: the root sentinel of every document. Any other seq-0 id can never be an item, and nothing is ever authored under this replica. */
 const ROOT_REPLICA = 'aaaaaaaaaaaaa';
 
@@ -85,12 +87,12 @@ function isCharText(s: string): boolean {
   return String.fromCodePoint(cp).length === s.length;
 }
 
-/** LLD §5.2: `level` only on headings, and only 1..3. Stricter than the CRDT's own check, which is the point of validating at the edge. */
+/** LLD §5.2: `level` only on headings (1..3), `checked` only on checklist items — stricter than the CRDT's own check, which is the point of validating at the edge. */
 function isBlockAttrs(x: unknown): x is BlockAttrs {
-  if (!hasExactKeys(x, ['type'], ['level'])) return false;
+  if (!hasExactKeys(x, ['type'], ['level', 'checked'])) return false;
   if (typeof x.type !== 'string' || !BLOCK_TYPES.includes(x.type)) return false;
-  if (x.level === undefined) return true;
-  return x.type === 'heading' && (x.level === 1 || x.level === 2 || x.level === 3);
+  if (x.level !== undefined && !(x.type === 'heading' && (x.level === 1 || x.level === 2 || x.level === 3))) return false;
+  return x.checked === undefined || (x.type === 'check' && typeof x.checked === 'boolean');
 }
 
 function isBlockSeed(x: Record<string, unknown>): boolean {
@@ -137,6 +139,16 @@ function hrefFits(mark: unknown, href: unknown): boolean {
   return href === undefined || (mark === 'link' && isHref(href));
 }
 
+/** A colour mark's value (E56): a bounded `#rrggbb`/`#rrggbbaa` hex, so no attacker-chosen string ever reaches a `style` attribute. `value` travels only on a colour mark. */
+function isMarkColor(x: unknown): x is string {
+  return typeof x === 'string' && x.length <= LIMITS.MAX_MARK_VALUE && MARK_COLOR_RE.test(x);
+}
+
+/** `value` travels only on a colour mark and only as a safe hex; on any other mark it is refused. */
+function valueFits(mark: unknown, value: unknown): boolean {
+  return value === undefined || (typeof mark === 'string' && COLOR_MARKS.includes(mark) && isMarkColor(value));
+}
+
 /** A target of del/blk/fmt: something that exists, is not the root, and is not the op itself. Mirrors `apply`'s TARGET_IS_ROOT and SELF_PARENT. */
 function isTarget(x: unknown, own: ItemId): x is ItemId {
   return isDependency(x) && !isRoot(x) && !sameId(x, own);
@@ -162,7 +174,7 @@ function validateDel(x: Record<string, unknown>): Valid<Op> {
 }
 
 function validateFmt(x: Record<string, unknown>): Valid<Op> {
-  if (!hasExactKeys(x, ['t', 'id', 'targets', 'mark', 'active', 'lamport'], ['href'])) return bad('fmt: wrong key set');
+  if (!hasExactKeys(x, ['t', 'id', 'targets', 'mark', 'active', 'lamport'], ['href', 'value'])) return bad('fmt: wrong key set');
   if (!isAuthorId(x.id)) return bad('fmt: malformed id');
   const { targets } = x;
   if (!Array.isArray(targets) || targets.length < 1 || targets.length > LIMITS.MAX_FMT_TARGETS) return bad(`fmt: targets must have 1..${LIMITS.MAX_FMT_TARGETS} ids`);
@@ -172,6 +184,7 @@ function validateFmt(x: Record<string, unknown>): Valid<Op> {
   if (typeof x.active !== 'boolean') return bad('fmt: active must be boolean');
   if (!isLamport(x.lamport)) return bad('fmt: malformed lamport');
   if (!hrefFits(x.mark, x.href)) return bad(`fmt: href must be a link's http(s) or mailto URL of at most ${LIMITS.MAX_HREF} chars`);
+  if (!valueFits(x.mark, x.value)) return bad(`fmt: value must be a colour mark's #rrggbb(aa) hex of at most ${LIMITS.MAX_MARK_VALUE} chars`);
   return { ok: true, value: x as unknown as Op };
 }
 
@@ -235,8 +248,8 @@ function isMarkSet(x: unknown): x is MarkSet {
   if (!isRecord(x)) return false;
   return Object.keys(x).every((k) => {
     const m = x[k];
-    if (!MARK_NAMES.includes(k) || !hasExactKeys(m, ['active', 'lamport', 'replica', 'seq'], ['href'])) return false;
-    return typeof m.active === 'boolean' && isLamport(m.lamport) && isReplicaId(m.replica) && isUint(m.seq) && m.seq >= 1 && hrefFits(k, m.href);
+    if (!MARK_NAMES.includes(k) || !hasExactKeys(m, ['active', 'lamport', 'replica', 'seq'], ['href', 'value'])) return false;
+    return typeof m.active === 'boolean' && isLamport(m.lamport) && isReplicaId(m.replica) && isUint(m.seq) && m.seq >= 1 && hrefFits(k, m.href) && valueFits(k, m.value);
   });
 }
 

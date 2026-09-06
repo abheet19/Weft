@@ -94,6 +94,7 @@ export function refuse(op: unknown): RejectReason | null {
     case 'fmt': {
       if (!Array.isArray(x.targets) || !isMarkName(x.mark) || typeof x.active !== 'boolean' || !isLamport(x.lamport)) return 'MALFORMED';
       if (x.href !== undefined && typeof x.href !== 'string') return 'MALFORMED';
+      if (x.value !== undefined && typeof x.value !== 'string') return 'MALFORMED';
       for (const t of x.targets) {
         const r = targetReason(t, own);
         if (r !== null) return r;
@@ -168,7 +169,10 @@ function integrateInsert(doc: Doc, op: Extract<Op, { t: 'ins' }>): Doc {
 }
 
 function copyAttrs(attrs: BlockRegister['attrs']): BlockRegister['attrs'] {
-  return attrs.level === undefined ? { type: attrs.type } : { type: attrs.type, level: attrs.level };
+  const out: { type: BlockRegister['attrs']['type']; level?: 1 | 2 | 3; checked?: boolean } = { type: attrs.type };
+  if (attrs.level !== undefined) out.level = attrs.level;
+  if (attrs.checked !== undefined) out.checked = attrs.checked;
+  return out;
 }
 
 function integrateDelete(doc: Doc, target: ItemId): Doc {
@@ -192,10 +196,16 @@ function wins(lamport: number, writer: ItemId, current: { readonly lamport: numb
 
 function integrateFormat(doc: Doc, op: Extract<Op, { t: 'fmt' }>): Doc {
   let items = persistent(doc.items);
+  // The register carries its mark's value (a link's href, a colour's value) under the same LWW as
+  // `active`; only the field that belongs to this mark is stored, so a stray `href` on a colour op
+  // (refused at the wire) could never sit on a colour register.
+  const base = { active: op.active, lamport: op.lamport, replica: op.id.replica, seq: op.id.seq } as const;
   const state: MarkState =
     op.mark === 'link' && op.href !== undefined
-      ? { active: op.active, lamport: op.lamport, replica: op.id.replica, seq: op.id.seq, href: op.href }
-      : { active: op.active, lamport: op.lamport, replica: op.id.replica, seq: op.id.seq };
+      ? { ...base, href: op.href }
+      : (op.mark === 'textColor' || op.mark === 'highlightColor') && op.value !== undefined
+        ? { ...base, value: op.value }
+        : base;
   for (const target of op.targets) {
     const key = idKey(target);
     const item = items.get(key) as Item;

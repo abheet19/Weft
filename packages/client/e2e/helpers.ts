@@ -16,6 +16,22 @@ export const pillSuffix = (page: Page) => page.getByTestId('pill-suffix');
 export const offlineSwitch = (page: Page) => page.getByRole('switch', { name: 'Simulate offline' });
 export const notice = (page: Page) => page.locator('.notice');
 
+/** The redesign moves the sync controls into the sidebar's Sync tab. Work-offline lives in the tab body;
+ * open the tab to reach its switch. Idempotent. */
+export async function openSync(page: Page): Promise<void> {
+  await page.getByRole('tab', { name: 'Sync' }).click();
+  await expect(offlineSwitch(page)).toBeVisible();
+}
+
+/** The engineer chaos (Drop, Delay, Force divergence) and the convergence readouts are folded under a
+ * collapsed Diagnostics in the Sync tab; open the tab and expand Diagnostics to reach them. Idempotent. */
+export async function openChaos(page: Page): Promise<void> {
+  await page.getByRole('tab', { name: 'Sync' }).click();
+  const details = page.locator('details.diag');
+  await expect(details).toBeVisible();
+  if (!(await details.evaluate((d) => (d as HTMLDetailsElement).open))) await details.locator('summary').click();
+}
+
 export async function open(page: Page, docId: string): Promise<void> {
   await page.goto(`${base()}/d/${docId}`);
   await expect(editor(page)).toBeVisible();

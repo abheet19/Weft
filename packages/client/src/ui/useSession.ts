@@ -12,6 +12,7 @@
 // tests; this file is excluded from coverage as the shell's `.tsx` files are.
 
 import { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { visibleItems } from '@weft/crdt';
 import type { BindingHost } from '../binding/plugin.ts';
 import type { RunnerSnapshot } from '../session/runner.ts';
@@ -55,7 +56,14 @@ export function useSession(url: string, docId: string, attempt: number, callback
       if (merged !== null) cb.current.onMerged(merged);
       for (const listener of listeners) listener();
       const empty = visibleItems(session.runner.doc).length === 0;
-      setPhase((was) => (was.phase === 'ready' ? { ...was, snapshot, empty } : was));
+      const commit = (): void => setPhase((was) => (was.phase === 'ready' ? { ...was, snapshot, empty } : was));
+      // `Catching up · N in, M out` (the `syncing` state) exists only to be seen during a reconnect.
+      // It and the `live` change that follows are dispatched in one task, so React 19's automatic
+      // batching would commit only the later one and the catch-up status would never paint. Flush that
+      // one transition synchronously so the honest object reaches the screen; everything else batches.
+      // Safe here: `syncing` is only ever entered from a socket message, never inside a React render.
+      if (snapshot.session.s === 'syncing') flushSync(commit);
+      else commit();
     };
     openSession({ ...browserDeps(window, newReplicaId), url, docId, onChange }).then(
       (session) => {

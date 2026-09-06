@@ -5,7 +5,7 @@
 // at an equal state vector; the red Diverged alert appears, carries only an explicit action (no
 // dismiss cross), and clears only when that action is taken. Every wait is on visible DOM, never time.
 import { expect, test, type Page } from '@playwright/test';
-import { editor, open, pill } from './helpers.ts';
+import { editor, open, openChaos, pill } from './helpers.ts';
 
 const stack = (page: Page) => page.getByTestId('presence-stack');
 const presenceLabel = (page: Page) => page.getByTestId('presence-label');
@@ -61,7 +61,9 @@ test('I13 divergence tripwire: a peer disagreeing at an equal state vector raise
   await page.keyboard.type('converge');
   await expect(pill(page)).toHaveText('Saved');
 
-  // Force divergence is enabled once this replica has computed its own hash (after quiet).
+  // Force divergence is enabled once this replica has computed its own hash (after quiet). It and the
+  // convergence footer live in the Sync tab's Diagnostics now, so open both first.
+  await openChaos(page);
   const trip = page.getByRole('button', { name: 'Trip' });
   await expect(trip).toBeEnabled();
   await trip.click();

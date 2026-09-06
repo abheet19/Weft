@@ -21,10 +21,14 @@ export const LIMITS = {
   MAX_PRESENCE_COLOR: 7, // palette indexes are 0..7
   MAX_LAMPORT: 2 ** 31 - 1, // formatting lamports; the same bound as @weft/crdt's so every language a port is written in can hold one
   MAX_HREF: 2_048, // characters of a link's `href`; browsers and servers agree on roughly this bound for a URL
+  MAX_MARK_VALUE: 32, // characters of a colour mark's `value`; a `#rrggbb`/`#rrggbbaa` hex fits with room to spare (E56)
 } as const;
 
 /** The schemes a link may carry (LLD §8 S6, E28): anything else — `javascript:`, `data:`, `vbscript:` — is refused at validate time, not merely at render time. */
 export const HREF_SCHEME_RE: RegExp = /^(?:https?|mailto):/i;
+
+/** A colour mark's value (E56): a `#rrggbb` or `#rrggbbaa` hex, nothing else — refused at validate time so no attacker-chosen string ever reaches a `style` attribute at render. */
+export const MARK_COLOR_RE: RegExp = /^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 
 /** Document ids are URL path segments and file names on the server, so the alphabet is the safe intersection of both (LLD §5.2). */
 export const DOC_ID_RE: RegExp = /^[a-z0-9-]{8,64}$/;

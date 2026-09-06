@@ -184,11 +184,13 @@ describe('ops and validateOp', () => {
     refused(validateOp(fmt('all')));
     refused(validateOp(fmt([id(A, 1)])));
     refused(validateOp(fmt([ROOT])));
-    refused(validateOp(fmt([id(B, 1)], { mark: 'underline' })));
+    refused(validateOp(fmt([id(B, 1)], { mark: 'blink' })));
     refused(validateOp(fmt([id(B, 1)], { active: 'yes' })));
     refused(validateOp(fmt([id(B, 1)], { lamport: 1.5 })));
     refused(validateOp(fmt([id(B, 1)], { mark: 'link', href: 7 })));
     expect(validateOp(fmt([id(B, 1)], { mark: 'link', href: 'https://example.org' })).ok).toBe(true);
+    // The extended inline marks (S6): the boolean marks pass with no value; the colour marks carry one.
+    for (const mark of ['underline', 'strikethrough', 'highlight', 'textColor', 'highlightColor']) expect(validateOp(fmt([id(B, 1)], { mark })).ok).toBe(true);
     refused(validateOp(fmt([id(B, 1)], { id: id(A, 0) })));
     refused(validateOp({ t: 'fmt', id: id(A, 1), targets: [id(B, 1)] }));
   });
@@ -199,6 +201,26 @@ describe('ops and validateOp', () => {
     for (const href of ['javascript:alert(1)', 'JavaScript:alert(1)', 'data:text/html,hi', 'vbscript:x', ' https://example.org', '//example.org', 'example.org', '', `https://x.org/${'p'.repeat(LIMITS.MAX_HREF)}`]) refused(validateOp(link(href)));
     for (const mark of ['bold', 'italic', 'code']) refused(validateOp(link('https://example.org', mark)));
     expect(validateOp({ t: 'fmt', id: id(A, 2), targets: [id(A, 1)], mark: 'bold', active: true, lamport: 1 }).ok).toBe(true);
+  });
+
+  it('fmt value (E56): a colour mark accepts a #rrggbb(aa) hex; a non-hex, an over-long value, or a value on a non-colour mark is refused', () => {
+    const col = (value: unknown, mark = 'textColor') => ({ t: 'fmt', id: id(A, 2), targets: [id(A, 1)], mark, active: true, lamport: 1, value });
+    for (const value of ['#0e8ea0', '#C77D16', '#0e8ea0ff']) {
+      expect(validateOp(col(value)).ok).toBe(true);
+      expect(validateOp(col(value, 'highlightColor')).ok).toBe(true);
+    }
+    for (const value of ['red', 'rgb(1,2,3)', '#fff', '#0e8ea0;color:red', `#${'a'.repeat(64)}`, 7, 'url(x)']) refused(validateOp(col(value)));
+    // `value` rides only a colour mark: on a link, bold or highlight (boolean) it is refused.
+    for (const mark of ['link', 'bold', 'highlight']) refused(validateOp(col('#0e8ea0', mark)));
+  });
+
+  it('blk: a checklist item carries `checked` only on type check; a tick on any other type is refused', () => {
+    const blk = (attrs: unknown) => ({ t: 'blk', id: id(A, 1), target: id(B, 1), attrs, lamport: 1 });
+    for (const type of ['ordered', 'code', 'divider', 'check']) expect(validateOp(blk({ type })).ok, type).toBe(true);
+    expect(validateOp(blk({ type: 'check', checked: true })).ok).toBe(true);
+    expect(validateOp(blk({ type: 'check', checked: false })).ok).toBe(true);
+    refused(validateOp(blk({ type: 'paragraph', checked: true })));
+    refused(validateOp(blk({ type: 'check', checked: 'yes' })));
   });
 
   it('blk: refuses bad attrs, a bad lamport, the root as target and a wrong key set', () => {

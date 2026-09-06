@@ -5,7 +5,7 @@
 // with the exact in/out counts and both end on Saved with identical text, the two runs intact and
 // not interleaved (I8), and the strip reads "Back online — N offline edits merged." with A's N.
 import { expect, test } from '@playwright/test';
-import { editor, notice, offlineSwitch, open, pill, pillSeen, recordPill } from './helpers.ts';
+import { editor, notice, offlineSwitch, open, openSync, pill, pillSeen, recordPill } from './helpers.ts';
 
 test('F2 go offline and type at the same spot: A reads Offline · N changes on this device with the exact N, B reads Saved', async ({ browser }) => {
   const docId = `e2e-f2-${Date.now().toString(36)}`;
@@ -15,6 +15,7 @@ test('F2 go offline and type at the same spot: A reads Offline · N changes on t
   await open(pageA, docId);
   await open(pageB, docId);
 
+  await openSync(pageA);
   await offlineSwitch(pageA).click();
   await expect(offlineSwitch(pageA)).toHaveAttribute('aria-checked', 'true');
   await expect(pill(pageA)).toHaveText('Offline · 0 changes on this device');
@@ -39,6 +40,7 @@ test('F3 reconnect and converge: the pill passes through Catching up · 3 in, 4 
   await open(pageA, docId);
   await open(pageB, docId);
 
+  await openSync(pageA);
   await offlineSwitch(pageA).click();
   await expect(pill(pageA)).toHaveText('Offline · 0 changes on this device');
   await editor(pageA).click();
@@ -59,6 +61,6 @@ test('F3 reconnect and converge: the pill passes through Catching up · 3 in, 4 
   expect(await editor(pageA).innerText()).toBe(await editor(pageB).innerText());
   const merged = notice(pageA).filter({ hasText: 'Back online' }); // the storage strip may be on screen too
   await expect(merged).toContainText('Back online — 4 offline edits merged.');
-  await expect(merged.getByRole('button', { name: 'Show in Inspector' })).toBeVisible();
+  await expect(merged.getByRole('button', { name: 'Open sidebar' })).toBeVisible();
   await Promise.all([a.close(), b.close()]);
 });

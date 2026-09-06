@@ -21,10 +21,16 @@ export const arbBlockAttrs: fc.Arbitrary<BlockAttrs> = fc.constantFrom<BlockAttr
   { type: 'heading', level: 2 },
   { type: 'heading', level: 3 },
   { type: 'bullet' },
+  { type: 'ordered' },
+  { type: 'check' },
+  { type: 'check', checked: true },
+  { type: 'check', checked: false },
   { type: 'quote' },
+  { type: 'code' },
+  { type: 'divider' },
 );
 
-export const arbMark: fc.Arbitrary<MarkName> = fc.constantFrom<MarkName>('bold', 'italic', 'code', 'link');
+export const arbMark: fc.Arbitrary<MarkName> = fc.constantFrom<MarkName>('bold', 'italic', 'code', 'link', 'underline', 'strikethrough', 'highlight', 'textColor', 'highlightColor');
 
 export const arbContent: fc.Arbitrary<IntentContent> = fc.oneof(
   { weight: 4, arbitrary: fc.constantFrom('a', 'b', 'c', 'd', ' ', '𝄞').map((text) => ({ kind: 'char', text }) as IntentContent) },
@@ -71,7 +77,10 @@ export function perform(rep: Replica, intent: Intent): boolean {
     case 'format': {
       if (len === 0) return false;
       const from = intent.pos % len;
-      rep.format(from, Math.min(len, from + intent.len), intent.mark, intent.active, intent.mark === 'link' ? 'https://example.test/' : undefined);
+      // A value-carrying mark gets a value so its LWW-on-value is exercised: an href for a link, a
+      // colour for a colour mark. Two distinct colours are drawn (by pos) so concurrent writers race.
+      const value = intent.mark === 'link' ? 'https://example.test/' : intent.mark === 'textColor' || intent.mark === 'highlightColor' ? (intent.pos % 2 === 0 ? '#0e8ea0' : '#c77d16') : undefined;
+      rep.format(from, Math.min(len, from + intent.len), intent.mark, intent.active, value);
       return true;
     }
     case 'setBlock': {

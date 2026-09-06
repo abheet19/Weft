@@ -255,6 +255,110 @@ kbd { font: 500 11px/1 var(--font-mono); padding: 3px 5px; border-radius: 5px; b
 .err pre { margin: 10px 0 12px; padding: 10px 12px; font-family: var(--font-mono); font-size: 12px; line-height: 1.5; white-space: pre-wrap; color: var(--ink-2); background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-1) }
 .err-a { display: flex; gap: 8px }
 
+/* ---------- 18. PERSISTENT TOOLBAR (S6, §4.4) — replaces the floating format bar as the primary surface ---------- */
+/* Ported from the redesign prototype's .toolbar. It is a glass panel but must let its dropdowns escape,
+   so overflow is visible (the .glass seam is a 1px top line, unaffected). It aligns with the page width. */
+.toolbar { position: sticky; top: calc(12px + var(--top-h)); z-index: 16; width: 100%; max-width: calc(68ch + 128px);
+  display: flex; align-items: center; gap: 3px; padding: 7px 9px; flex-wrap: wrap; row-gap: 6px; overflow: visible; font-family: var(--font-ui) }
+.tgrp { display: inline-flex; align-items: center; gap: 2px; position: relative }
+.tb-sep { width: 1px; height: 22px; background: var(--gl-edge); margin: 0 6px; flex: none }
+.tb { height: 32px; min-width: 32px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  color: var(--ink-2); font-size: 13.5px; border-radius: var(--r-1); background: none; position: relative; transition: background var(--t-fast), color var(--t-fast) }
+.tb:hover { background: color-mix(in oklch, var(--gl-inner), var(--ink) 12%); color: var(--ink) }
+.tb.on, .tb[aria-pressed="true"] { background: color-mix(in oklch, var(--accent) 18%, transparent); color: var(--accent) }
+.tb.wide { padding: 0 11px; font-weight: 600; color: var(--ink); gap: 4px }
+.tb .i { width: 16px; height: 16px }
+.tb b { font-weight: 800 } .tb i { font-style: italic; font-family: var(--font-doc) }
+.tb .u { text-decoration: underline } .tb .s { text-decoration: line-through }
+.tb[disabled] { opacity: .4; cursor: default }
+.tb .bar { position: absolute; left: 7px; right: 7px; bottom: 4px; height: 3px; border-radius: 2px } /* the swatch's colour indicator */
+.tb-swatch { position: relative; display: inline-flex }
+/* dropdown menus + colour palettes: opaque, above the toolbar, closing on an outside press (Toolbar.tsx) */
+.tb-menu { position: absolute; z-index: 70; top: calc(100% + 6px); left: 0; min-width: 200px; padding: 6px; border-radius: var(--r-2);
+  background: var(--paper); border: 1px solid var(--line); box-shadow: 0 20px 44px -20px oklch(0% 0 0 / .5); animation: pop var(--t-base) var(--ease) }
+.tb-mi { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border-radius: var(--r-1); color: var(--ink); text-align: left; font-size: 13.5px; background: none; transition: background var(--t-fast) }
+.tb-mi:hover { background: var(--raised) } .tb-mi[aria-checked="true"] { color: var(--accent) }
+.tb-palette { min-width: auto }
+.tb-chips { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; padding: 2px }
+.tb-chip { width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--line); cursor: pointer; transition: transform var(--t-fast) }
+.tb-chip:hover { transform: scale(1.12) }
+.tb-none { grid-column: 1/-1; display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 6px; margin-top: 4px; border-radius: 7px; text-align: left; font-size: 12.5px; color: var(--ink-2) }
+.tb-none:hover { background: var(--raised) }
+.tb-linkinput { position: absolute; z-index: 70; top: calc(100% + 6px); left: 0; height: 32px; width: 220px; padding: 0 10px; border-radius: var(--r-1);
+  border: 1px solid var(--line); background: var(--paper); color: var(--ink); font-family: var(--font-ui); font-size: 13px; box-shadow: 0 20px 44px -20px oklch(0% 0 0 / .5) }
+
+/* ---------- 19. LINK POPOVER (S6, §4.4) — the ONE persistent floating element ---------- */
+.linkpop { position: absolute; z-index: 35; display: flex; align-items: center; gap: 2px; padding: 5px; border-radius: var(--r-2); overflow: visible; animation: rise var(--t-fast) var(--ease) }
+.linkpop .url { max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 8px; font-size: 12.5px; color: var(--accent); font-family: var(--font-mono) }
+.linkpop button { width: 30px; height: 30px; display: grid; place-items: center; color: var(--ink-2); border-radius: var(--r-1); background: var(--gl-inner) }
+.linkpop button:hover { background: color-mix(in oklch, var(--gl-inner), var(--ink) 9%); color: var(--ink) }
+.linkpop .copied { color: var(--ok) }
+.pagefoot { display: flex; gap: 12px; margin-top: 16px; color: var(--ink-3); font-size: 12px; font-family: var(--font-ui) }
+
+/* ---------- 20. RIGHT SIDEBAR (S6, §4.5) — Outline / People / Sync tabs, replacing the Sync Inspector ---------- */
+/* The rail is now one glass panel with tabs; overrides the §13 flex-of-panels rail. Children scroll. */
+.rail { padding: 0; gap: 0; overflow: hidden }
+.railtabs { display: flex; gap: 2px; padding: 8px; border-bottom: 1px solid var(--gl-edge); flex: none }
+.railtab { flex: 1; height: 34px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-size: 12.5px; font-weight: 600;
+  color: var(--ink-2); background: none; border-radius: var(--r-1); transition: background var(--t-fast), color var(--t-fast) }
+.railtab .i { width: 15px; height: 15px }
+.railtab.on { background: color-mix(in oklch, var(--accent) 16%, transparent); color: var(--accent) }
+.railtab:hover:not(.on) { background: color-mix(in oklch, var(--gl-inner), var(--ink) 9%); color: var(--ink) }
+.railbody { padding: 14px 15px 16px; overflow-y: auto; min-height: 0 }
+.railhead { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 10px }
+.rail-empty { color: var(--ink-3); font-size: 13px; line-height: 1.5 }
+/* outline */
+.ol { display: flex; flex-direction: column; gap: 1px }
+.ol-a { display: block; width: 100%; text-align: left; padding: 6px 10px; border-radius: var(--r-1); color: var(--ink-2); font-size: 13.5px; line-height: 1.35;
+  background: none; border-left: 2px solid transparent; transition: background var(--t-fast), color var(--t-fast) }
+.ol-a:hover { background: var(--raised); color: var(--ink) }
+.ol-a.lvl2 { padding-left: 22px; font-size: 13px }
+.ol-a.lvl3 { padding-left: 34px; font-size: 12.5px; color: var(--ink-3) }
+/* people */
+.plist { display: flex; flex-direction: column; gap: 4px }
+.prow { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: var(--r-1) }
+.prow:hover { background: var(--raised) }
+.pdot { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: var(--on-hue); font: 700 12px/1 var(--font-ui); flex: none; position: relative; background: var(--hue) }
+.pdot.live::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 50%; background: var(--ok); border: 2px solid var(--paper) }
+.pmeta { min-width: 0; flex: 1 }
+.pmeta b { display: block; font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.pmeta span { font-size: 11.5px; color: var(--ink-3) }
+/* sync */
+.syncbig { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: var(--r-2); background: var(--raised); border: 1px solid var(--line) }
+.syncbig .ring { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; flex: none; background: color-mix(in oklch, var(--hue) 16%, transparent); color: var(--hue) }
+.syncbig b { display: block; font-size: 14.5px; font-weight: 600; color: var(--ink) } .syncbig span { font-size: 12px; color: var(--ink-3) }
+.metrics { margin-top: 12px }
+.metric { display: flex; justify-content: space-between; align-items: center; padding: 9px 2px; border-bottom: 1px solid var(--line); font-size: 13px }
+.metric:last-child { border-bottom: 0 } .metric .lab { color: var(--ink-2) }
+.metric .val { font-weight: 600; font-family: var(--font-mono); font-size: 12.5px } .metric .val.ok { color: var(--ok) }
+.diag { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px }
+.diag summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--ink-3); padding: 4px 2px }
+.diag summary::-webkit-details-marker { display: none }
+.diag summary .i { width: 14px; height: 14px; transition: transform var(--t-fast) } .diag[open] summary .i { transform: rotate(90deg) }
+.diag-body { padding-top: 8px } .diag-note { font-size: 11.5px; color: var(--ink-3); line-height: 1.6; margin-bottom: 8px }
+.chaos { margin-top: 10px }
+.rail-history { flex: none; padding: 12px 15px 14px; border-top: 1px solid var(--gl-edge) }
+.sync-offline { margin-top: 12px }
+
+/* ---------- 21. NEW MARKS & BLOCK TYPES IN THE DOCUMENT (S6) ---------- */
+.doc u { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 2px }
+.doc s { text-decoration: line-through }
+.doc mark { background: color-mix(in oklch, var(--warn) 45%, transparent); color: inherit; border-radius: 3px; padding: 0 2px }
+.doc pre { font-family: var(--font-mono); font-size: .9em; line-height: 1.55; margin: 0 0 1em; padding: 12px 14px; overflow-x: auto; white-space: pre-wrap;
+  color: var(--ink); font-style: normal; background: color-mix(in oklch, var(--raised), var(--ink) 4%); border: 1px solid var(--line); border-radius: var(--r-1) }
+.doc pre code { background: none; border: 0; padding: 0; font-size: 1em }
+.doc hr { border: 0; height: 1px; background: var(--line); margin: 1.4em 0 }
+/* numbered list: no <ol> wrapper (flat schema), so a CSS counter numbers each run; a non-ordered block resets it. */
+.doc .ProseMirror { counter-reset: weft-ol }
+.doc .ProseMirror > :not(li[data-ordered]) { counter-reset: weft-ol }
+.doc li[data-ordered] { list-style: none; counter-increment: weft-ol; position: relative }
+.doc li[data-ordered]::before { content: counter(weft-ol) "."; position: absolute; left: -1.6em; color: var(--ink-3); font-variant-numeric: tabular-nums }
+/* checklist: the tick is a collaborative attr on the item; the box is clickable (Editor's handleClickOn). */
+.doc li[data-check] { list-style: none; position: relative; display: flex; gap: 9px; align-items: flex-start; margin-left: .2em }
+.doc li[data-check]::before { content: ""; width: 18px; height: 18px; margin-top: 3px; flex: none; border: 1.5px solid var(--ink-3); border-radius: 5px; cursor: pointer }
+.doc li[data-check][data-checked="true"]::before { content: "✓"; display: grid; place-items: center; line-height: 1; font-size: 12px; font-weight: 800; color: var(--on-hue); background: var(--accent); border-color: var(--accent) }
+.doc li[data-check][data-checked="true"] { color: var(--ink-3); text-decoration: line-through }
+
 /* ---------- 17. FOCUS & A11Y (§6) ---------- */
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
 .doc:focus-visible, .doc .ProseMirror:focus-visible { outline: none }

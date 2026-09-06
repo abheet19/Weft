@@ -8,13 +8,14 @@
 // the 1 000-kill test in `test/store/tabKill.test.ts`; this flow is the demo's promise about what the
 // pill counted.
 import { expect, test } from '@playwright/test';
-import { base, editor, offlineSwitch, open, pill } from './helpers.ts';
+import { base, editor, offlineSwitch, open, openSync, pill } from './helpers.ts';
 
 test('F4 kill the tab, reopen: the offline edits the pill counted are back with the same Offline · N, the toggle is still on, and going online ends on Saved', async ({ browser }) => {
   const docId = `e2e-f4-${Date.now().toString(36)}`;
   const context = await browser.newContext();
   const first = await context.newPage();
   await open(first, docId);
+  await openSync(first);
   await offlineSwitch(first).click();
   await expect(pill(first)).toHaveText('Offline · 0 changes on this device');
   await editor(first).click();
@@ -27,6 +28,7 @@ test('F4 kill the tab, reopen: the offline edits the pill counted are back with 
   await again.goto(`${base()}/d/${docId}`);
   await expect(editor(again)).toBeVisible();
   await expect(pill(again)).toHaveText(`Offline · ${typed.length} changes on this device`);
+  await openSync(again);
   await expect(offlineSwitch(again)).toHaveAttribute('aria-checked', 'true');
   await expect(editor(again)).toHaveText(typed);
 

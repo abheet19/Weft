@@ -10,7 +10,7 @@
 // that formula) and never emit a token `apply` would refuse: a lone surrogate or U+0000 in editor
 // text becomes U+FFFD here, not a thrown error.
 
-import { MARK_NAMES, ROOT_ATTRS, type BlockAttrs, type Item, type MarkName, type MarkSet } from '@weft/crdt';
+import { markValue, MARK_NAMES, ROOT_ATTRS, type BlockAttrs, type Item, type MarkName, type MarkSet } from '@weft/crdt';
 import type { Node as PMNode } from 'prosemirror-model';
 
 /** A structural token: a code point, a soft break, or a block boundary. Marks are carried one level up (see `InlineTok`), because a boundary carries none and the structural diff is mark-blind. */
@@ -74,14 +74,15 @@ export function blockVisibleLength(block: PMNode): number {
   return n;
 }
 
-/** `level` means something only on a heading, and a heading always has one: the one shape both sides agree on (design §5.3 "schema mismatch"). */
+/** The one shape both sides agree on (design §5.3 "schema mismatch"): `level` means something only on a heading (which always has one); `checked` only on a checklist item, and there normalised to an explicit boolean so an unticked item (undefined) and a cleared one (false) are one state. */
 export function normalizeAttrs(attrs: BlockAttrs): BlockAttrs {
   if (attrs.type === 'heading') return { type: 'heading', level: attrs.level ?? 1 };
+  if (attrs.type === 'check') return { type: 'check', checked: attrs.checked === true };
   return { type: attrs.type };
 }
 
 export function sameAttrs(a: BlockAttrs, b: BlockAttrs): boolean {
-  return a.type === b.type && a.level === b.level;
+  return a.type === b.type && a.level === b.level && a.checked === b.checked;
 }
 
 /** The CRDT block attrs of a schema block node. The node names are the schema's; the attrs are the CRDT's — this is the only place the two vocabularies meet. */
@@ -91,8 +92,16 @@ export function attrsOfBlock(block: PMNode): BlockAttrs {
       return normalizeAttrs({ type: 'heading', level: block.attrs.level as 1 | 2 | 3 });
     case 'bullet_item':
       return { type: 'bullet' };
+    case 'ordered_item':
+      return { type: 'ordered' };
+    case 'check_item':
+      return normalizeAttrs({ type: 'check', checked: block.attrs.checked === true });
     case 'quote':
       return { type: 'quote' };
+    case 'code_block':
+      return { type: 'code' };
+    case 'divider':
+      return { type: 'divider' };
     default:
       return { type: 'paragraph' };
   }
@@ -171,37 +180,40 @@ export function textOfTokens(tokens: readonly Token[]): string {
 
 // ---------- marks and the block alphabet (E53) ----------
 
-/** One active mark on an item or inline node: its name and, for a link, its href. Ordered by MARK_NAMES so two equal sets compare element-wise. */
+/** One active mark on an item or inline node: its name and, for a value-carrying mark (a link's href, a colour's colour), its value. Ordered by MARK_NAMES so two equal sets compare element-wise. */
 export interface ActiveMark {
   readonly name: MarkName;
-  readonly href?: string;
+  readonly value?: string;
 }
 
-/** The active marks of a CRDT item, in MARK_NAMES order. A mark whose register is inactive is not present. */
+/** The active marks of a CRDT item, in MARK_NAMES order. A mark whose register is inactive is not present; a value-carrying mark carries its LWW value (`markValue` reads a link's href or a colour's value as one). */
 function activeMarksOf(marks: MarkSet): ActiveMark[] {
   const out: ActiveMark[] = [];
   for (const name of MARK_NAMES) {
     const state = marks[name];
     if (state?.active !== true) continue;
-    out.push(name === 'link' && state.href !== undefined ? { name, href: state.href } : { name });
+    const value = markValue(name, state);
+    out.push(value !== undefined ? { name, value } : { name });
   }
   return out;
 }
 
-/** The active marks of a PM inline node, in MARK_NAMES order — the same order as `activeMarksOf`, so the two are comparable. A mark the schema does not know is ignored (there are none). */
+/** The active marks of a PM inline node, in MARK_NAMES order — the same order as `activeMarksOf`, so the two are comparable. A link's value is its `href` attr, a colour's its `color` attr; every other mark carries none. */
 function marksOfPm(node: PMNode): ActiveMark[] {
   const names = new Set(node.marks.map((m) => m.type.name));
   const out: ActiveMark[] = [];
   for (const name of MARK_NAMES) {
     if (!names.has(name)) continue;
     const mark = node.marks.find((m) => m.type.name === name);
-    out.push(name === 'link' ? { name, href: (mark?.attrs.href as string | undefined) ?? '' } : { name });
+    const value =
+      name === 'link' ? ((mark?.attrs.href as string | undefined) ?? '') : name === 'textColor' || name === 'highlightColor' ? ((mark?.attrs.color as string | undefined) ?? '') : undefined;
+    out.push(value !== undefined ? { name, value } : { name });
   }
   return out;
 }
 
 function sameMarks(a: readonly ActiveMark[], b: readonly ActiveMark[]): boolean {
-  return a.length === b.length && a.every((m, i) => m.name === (b[i] as ActiveMark).name && m.href === (b[i] as ActiveMark).href);
+  return a.length === b.length && a.every((m, i) => m.name === (b[i] as ActiveMark).name && m.value === (b[i] as ActiveMark).value);
 }
 
 /** One inline token WITH its marks: a char or a break. This is what a mark-aware diff compares within a block. */
@@ -241,7 +253,10 @@ export function blocksOfItems(items: readonly Item[]): Block[] {
   let inlines: InlineTok[] = [];
   let text = '';
   const flush = (attrs: BlockAttrs): void => {
-    blocks.push({ attrs, text, inlines });
+    // A code block is literal text with no inline marks (S6): the CRDT may still carry marks on its
+    // chars (a marked paragraph retyped as code), but the editor shows none, so both sides agree.
+    const shown = attrs.type === 'code' ? inlines.map((t) => (t.marks.length === 0 ? t : { ...t, marks: [] as readonly ActiveMark[] })) : inlines;
+    blocks.push({ attrs, text, inlines: shown });
     inlines = [];
     text = '';
   };

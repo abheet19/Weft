@@ -106,7 +106,10 @@ function copyId(id: ItemId): ItemId {
 }
 
 function copyAttrs(attrs: BlockAttrs): BlockAttrs {
-  return attrs.level === undefined ? { type: attrs.type } : { type: attrs.type, level: attrs.level };
+  const out: { type: BlockAttrs['type']; level?: 1 | 2 | 3; checked?: boolean } = { type: attrs.type };
+  if (attrs.level !== undefined) out.level = attrs.level;
+  if (attrs.checked !== undefined) out.checked = attrs.checked;
+  return out;
 }
 
 function copyContent(content: ItemContent): ItemContent {
@@ -120,7 +123,10 @@ function copyMarks(marks: MarkSet): MarkSet {
   for (const name of MARK_NAMES) {
     const state = marks[name];
     if (state === undefined) continue;
-    out[name] = state.href === undefined ? { active: state.active, lamport: state.lamport, replica: state.replica, seq: state.seq } : { active: state.active, lamport: state.lamport, replica: state.replica, seq: state.seq, href: state.href };
+    // Re-create the register field by field so nothing from the untrusted input is kept by reference;
+    // a link carries `href`, a colour `value`, every other mark neither.
+    const copy: MarkState = { active: state.active, lamport: state.lamport, replica: state.replica, seq: state.seq };
+    out[name] = state.href !== undefined ? { ...copy, href: state.href } : state.value !== undefined ? { ...copy, value: state.value } : copy;
   }
   return out;
 }
@@ -138,7 +144,7 @@ function copyOp(op: Op): Op {
       return { t: 'blk', id: copyId(op.id), target: copyId(op.target), attrs: copyAttrs(op.attrs), lamport: op.lamport };
     case 'fmt': {
       const base = { t: 'fmt' as const, id: copyId(op.id), targets: op.targets.map(copyId), mark: op.mark, active: op.active, lamport: op.lamport };
-      return op.href === undefined ? base : { ...base, href: op.href };
+      return op.href !== undefined ? { ...base, href: op.href } : op.value !== undefined ? { ...base, value: op.value } : base;
     }
   }
 }

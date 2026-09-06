@@ -7,10 +7,24 @@
 import { ROOT_REPLICA, REPLICA_ID_RE, type ItemId, type ReplicaId } from './ids.ts';
 
 export type Side = 'L' | 'R';
-export type MarkName = 'bold' | 'italic' | 'code' | 'link';
+export type MarkName = 'bold' | 'italic' | 'code' | 'link' | 'underline' | 'strikethrough' | 'highlight' | 'textColor' | 'highlightColor';
 
-/** The closed set of mark names, in the order canonicalBytes sorts them. Exists so the snapshot decoder can refuse any other key (a `"__proto__"` mark is data, not a bug in the type system). */
-export const MARK_NAMES: readonly MarkName[] = ['bold', 'code', 'italic', 'link'];
+/** The closed set of mark names, in the order canonicalBytes sorts them (code-point ascending). Exists so the snapshot decoder can refuse any other key (a `"__proto__"` mark is data, not a bug in the type system) and so filtering it yields the sorted active set. */
+export const MARK_NAMES: readonly MarkName[] = ['bold', 'code', 'highlight', 'highlightColor', 'italic', 'link', 'strikethrough', 'textColor', 'underline'];
+
+/**
+ * The marks that carry a VALUE the register stores under LWW, exactly as `link` stores its `href`
+ * (design S6): `link` → a URL, `textColor` / `highlightColor` → a colour. `value` is the field two
+ * concurrent writers race on, resolved by the same `(lamport, replica, seq)` total order as `active`.
+ * `link` keeps its own `href` field for wire compatibility; the two are read through `markValue`.
+ */
+export const VALUE_MARKS: readonly MarkName[] = ['highlightColor', 'link', 'textColor'];
+
+/** The value a mark register carries, or undefined: `link`'s href, a colour's `value`, else nothing. The one place the two value fields are read as one, so canonical bytes and the binding compare values uniformly. */
+export function markValue(name: MarkName, state: MarkState): string | undefined {
+  if (name === 'link') return state.href;
+  return name === 'textColor' || name === 'highlightColor' ? state.value : undefined;
+}
 
 /**
  * The largest formatting lamport any op may carry (E9). Reaching it honestly takes two billion
@@ -29,17 +43,22 @@ export interface MarkState {
   readonly lamport: number;
   readonly replica: ReplicaId;
   readonly seq: number;
+  /** `link`'s destination — a value under LWW, like `active`. Only a `link` register carries it. */
   readonly href?: string;
+  /** A colour mark's value (`textColor` / `highlightColor`) — a value under LWW, like `href` on a link. Only a colour register carries it. */
+  readonly value?: string;
 }
 export type MarkSet = Readonly<Partial<Record<MarkName, MarkState>>>;
-export type BlockType = 'paragraph' | 'heading' | 'bullet' | 'quote';
+export type BlockType = 'paragraph' | 'heading' | 'bullet' | 'ordered' | 'check' | 'quote' | 'code' | 'divider';
 
-/** The closed set of block types. Exists for the same reason as MARK_NAMES: the decoder validates against data, not types. */
-export const BLOCK_TYPES: readonly BlockType[] = ['paragraph', 'heading', 'bullet', 'quote'];
+/** The closed set of block types. Exists for the same reason as MARK_NAMES: the decoder validates against data, not types. `ordered` is a numbered item, `check` a checklist item (its `checked` an LWW attr like a heading's `level`), `code` a literal-text code block, `divider` a content-less rule (a boundary that closes an empty block). */
+export const BLOCK_TYPES: readonly BlockType[] = ['paragraph', 'heading', 'bullet', 'ordered', 'check', 'quote', 'code', 'divider'];
 
 export interface BlockAttrs {
   readonly type: BlockType;
   readonly level?: 1 | 2 | 3;
+  /** A checklist item's tick, a collaborative LWW attribute carried on the boundary (only meaningful on `check`). */
+  readonly checked?: boolean;
 }
 
 /**
@@ -116,9 +135,10 @@ export function isMarkName(x: unknown): x is MarkName {
 }
 
 export function isBlockAttrs(x: unknown): x is BlockAttrs {
-  if (!hasExactKeys(x, ['type'], ['level'])) return false;
+  if (!hasExactKeys(x, ['type'], ['level', 'checked'])) return false;
   if (!(BLOCK_TYPES as readonly string[]).includes(x.type as string)) return false;
-  return x.level === undefined || x.level === 1 || x.level === 2 || x.level === 3;
+  if (!(x.level === undefined || x.level === 1 || x.level === 2 || x.level === 3)) return false;
+  return x.checked === undefined || typeof x.checked === 'boolean';
 }
 
 /** A formatting lamport: an integer in 0..MAX_LAMPORT. NaN, Infinity or 2^53 would poison every later LWW comparison (see MAX_LAMPORT). */
@@ -166,10 +186,11 @@ export function isItemContent(x: unknown): x is ItemContent {
 }
 
 function isMarkState(x: unknown): x is MarkState {
-  if (!hasExactKeys(x, ['active', 'lamport', 'replica', 'seq'], ['href'])) return false;
+  if (!hasExactKeys(x, ['active', 'lamport', 'replica', 'seq'], ['href', 'value'])) return false;
   if (typeof x.active !== 'boolean' || !isLamport(x.lamport) || !isWriterSeq(x.seq)) return false;
   if (typeof x.replica !== 'string' || !REPLICA_ID_RE.test(x.replica)) return false;
-  return x.href === undefined || typeof x.href === 'string';
+  if (!(x.href === undefined || typeof x.href === 'string')) return false;
+  return x.value === undefined || typeof x.value === 'string';
 }
 
 /** A MarkSet from untrusted data: only MarkName keys, each a valid register. `"__proto__"` is not a mark. */

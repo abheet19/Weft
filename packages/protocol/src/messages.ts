@@ -17,12 +17,14 @@ export interface ItemId {
 }
 
 export type Side = 'L' | 'R';
-export type MarkName = 'bold' | 'italic' | 'code' | 'link';
-export type BlockType = 'paragraph' | 'heading' | 'bullet' | 'quote';
+export type MarkName = 'bold' | 'italic' | 'code' | 'link' | 'underline' | 'strikethrough' | 'highlight' | 'textColor' | 'highlightColor';
+export type BlockType = 'paragraph' | 'heading' | 'bullet' | 'ordered' | 'check' | 'quote' | 'code' | 'divider';
 
 export interface BlockAttrs {
   readonly type: BlockType;
   readonly level?: 1 | 2 | 3;
+  /** A checklist item's tick, an LWW attribute on the boundary (only on `check`). */
+  readonly checked?: boolean;
 }
 
 /** One character: exactly one Unicode code point, which may be two UTF-16 code units. */
@@ -41,7 +43,7 @@ export type ItemContent = CharContent | BlockRegister | BreakContent;
 export type Op =
   | { readonly t: 'ins'; readonly id: ItemId; readonly parent: ItemId; readonly side: Side; readonly content: Content }
   | { readonly t: 'del'; readonly id: ItemId; readonly target: ItemId }
-  | { readonly t: 'fmt'; readonly id: ItemId; readonly targets: readonly ItemId[]; readonly mark: MarkName; readonly active: boolean; readonly lamport: number; readonly href?: string } // ⟨D2⟩ ≤ 4096 targets
+  | { readonly t: 'fmt'; readonly id: ItemId; readonly targets: readonly ItemId[]; readonly mark: MarkName; readonly active: boolean; readonly lamport: number; readonly href?: string; readonly value?: string } // ⟨D2⟩ ≤ 4096 targets; `href` on a link, `value` on a colour
   | { readonly t: 'blk'; readonly id: ItemId; readonly target: ItemId; readonly attrs: BlockAttrs; readonly lamport: number };
 
 export type StateVector = Readonly<Record<ReplicaId, number>>;
@@ -53,6 +55,8 @@ export interface MarkState {
   readonly replica: ReplicaId;
   readonly seq: number;
   readonly href?: string;
+  /** A colour mark's value (E56); only on `textColor` / `highlightColor`. */
+  readonly value?: string;
 }
 export type MarkSet = Readonly<Partial<Record<MarkName, MarkState>>>;
 

@@ -66,8 +66,10 @@ function markStepToOps(doc: Doc, index: PositionIndex, me: ReplicaId, nextSeq: n
   const to = pmPosToVisible(before, step.to);
   if (from >= to) return { ops: [], doc, index };
   const active = step instanceof AddMarkStep;
-  const href = name === 'link' && active ? (mark.attrs.href as string | undefined) : undefined;
-  const r = localFormat(doc, me, nextSeq, from, to, name as MarkName, active, href);
+  // A value-carrying mark takes its value from the attr the schema names — a link's href, a colour's
+  // color; it rides only an active write, mirrored by `localFormat`.
+  const value = !active ? undefined : name === 'link' ? (mark.attrs.href as string | undefined) : name === 'textColor' || name === 'highlightColor' ? (mark.attrs.color as string | undefined) : undefined;
+  const r = localFormat(doc, me, nextSeq, from, to, name as MarkName, active, value);
   // Marks change no item's POSITION, but they replace the item objects; the index caches items, so
   // it is rebuilt from the new doc rather than reused stale. Formatting is not the per-keystroke path.
   return { ops: r.ops, doc: r.doc, index: buildIndex(r.doc) };

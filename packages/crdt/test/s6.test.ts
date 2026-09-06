@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
 import { buildIndex, canonicalString, decodeSnapshot, encodeSnapshot, MARK_NAMES, svEqual, visibleItems, type Item } from '../src/index.ts';
 import { arbSchedule, arbScript, perform } from './generators.ts';
-import { assertBothSeeds, brk, healAll, mulberry32, R, Replica, REPLICAS, text } from './helpers.ts';
+import { assertBothSeeds, block, blk, healAll, brk, mulberry32, R, Replica, REPLICAS, text } from './helpers.ts';
 
 const activeMarks = (item: Item): string[] => MARK_NAMES.filter((m) => item.marks[m]?.active === true);
 
@@ -83,6 +83,91 @@ describe('design §2.5 formatting anomaly', () => {
     expect(canonicalString(a2.doc)).toBe(canonicalString(b2.doc)); // convergence
     const merged = visibleItems(a2.doc);
     expect(activeMarks(merged[5] as Item)).toEqual([]); // the "!" is still not bold
+  });
+});
+
+describe('S6 marks — the extended inline set (underline, strikethrough, highlight, colours)', () => {
+  it('a new boolean mark converges under concurrent toggles and re-applying its op is a duplicate (I3)', () => {
+    const a = new Replica(R.a);
+    const b = new Replica(R.b);
+    a.type(0, 'word');
+    b.receiveAll(a.log);
+    a.format(0, 4, 'underline', true);
+    b.format(0, 2, 'strikethrough', true);
+    healAll([a, b]);
+    expect(canonicalString(a.doc)).toBe(canonicalString(b.doc));
+    expect(visibleItems(a.doc).slice(0, 4).every((i) => activeMarks(i).includes('underline'))).toBe(true);
+    // I3: every op already held re-applies as a duplicate against the same object.
+    for (const op of [...a.log, ...b.log]) expect(a.receive(op).kind === 'duplicate' || a.doc.items.has(`${op.id.replica}:${op.id.seq}`)).toBe(true);
+  });
+
+  it('a colour mark carries a value under LWW: two replicas colouring the same char differently converge to one value (the total order picks it), the same on both', () => {
+    const a = new Replica(R.a);
+    const b = new Replica(R.b);
+    a.type(0, 'x');
+    b.receiveAll(a.log);
+    // Concurrent, overlapping colour writes with the SAME formatting lamport — the tie is broken by
+    // (replica, seq), not arrival order, so the winner is identical however the logs interleave.
+    a.format(0, 1, 'textColor', true, '#0e8ea0');
+    b.format(0, 1, 'textColor', true, '#c77d16');
+    healAll([a, b]);
+    expect(canonicalString(a.doc)).toBe(canonicalString(b.doc));
+    const va = visibleItems(a.doc)[0]?.marks.textColor?.value;
+    expect(va).toBe(visibleItems(b.doc)[0]?.marks.textColor?.value);
+    // R.b sorts after R.a, so with equal lamports B's colour wins the total order.
+    expect(va).toBe('#c77d16');
+    expect(canonicalString(decodeSnapshot(encodeSnapshot(a.doc)))).toBe(canonicalString(a.doc)); // value survives a snapshot (I12)
+  });
+
+  it('highlightColor and textColor are independent registers on one char', () => {
+    const a = new Replica(R.a);
+    a.type(0, 'x');
+    a.format(0, 1, 'textColor', true, '#0e8ea0');
+    a.format(0, 1, 'highlightColor', true, '#ffe8a3');
+    const marks = visibleItems(a.doc)[0]?.marks;
+    expect(marks?.textColor?.value).toBe('#0e8ea0');
+    expect(marks?.highlightColor?.value).toBe('#ffe8a3');
+  });
+});
+
+describe('S6 blocks — checklist tick and code block converge', () => {
+  it('a checklist item’s `checked` is a collaborative LWW attr: concurrent toggles converge to one value on both replicas', () => {
+    const a = new Replica(R.a);
+    const b = new Replica(R.b);
+    a.type(0, 'todo');
+    a.insert(4, block({ type: 'check' }, R.a)); // a check boundary closing "todo"
+    b.receiveAll(a.log);
+    const boundary = visibleItems(a.doc).find((i) => i.content.kind === 'block')?.id;
+    if (boundary === undefined) throw new Error('no boundary');
+    // Both toggle the same boundary concurrently to different values, same lamport basis.
+    a.setBlock(4, { type: 'check', checked: true });
+    b.setBlock(4, { type: 'check', checked: false });
+    healAll([a, b]);
+    expect(canonicalString(a.doc)).toBe(canonicalString(b.doc));
+    const ca = visibleItems(a.doc).find((i) => i.content.kind === 'block');
+    expect(ca?.content.kind === 'block' && ca.content.attrs.type).toBe('check');
+    // The winning tick is the same on both; a later explicit blk from A (higher lamport) would win.
+    const ta = ca?.content.kind === 'block' ? ca.content.attrs.checked : undefined;
+    const cb = visibleItems(b.doc).find((i) => i.content.kind === 'block');
+    expect(cb?.content.kind === 'block' ? cb.content.attrs.checked : undefined).toBe(ta);
+    void blk; // blk builder available for lower-level tie tests
+  });
+
+  it('a code block (literal text) converges and its characters are preserved across a snapshot', () => {
+    const a = new Replica(R.a);
+    const b = new Replica(R.b);
+    a.type(0, 'f(x)');
+    a.insert(4, block({ type: 'code' }, R.a));
+    a.type(5, 'ok');
+    b.receiveAll(a.log);
+    // B types into the code block concurrently; the boundary's LWW register keeps the block a code block.
+    b.type(4, '!');
+    a.setBlock(0, { type: 'code' });
+    healAll([a, b]);
+    expect(canonicalString(a.doc)).toBe(canonicalString(b.doc));
+    const firstBoundary = visibleItems(a.doc).find((i) => i.content.kind === 'block');
+    expect(firstBoundary?.content.kind === 'block' && firstBoundary.content.attrs.type).toBe('code');
+    expect(canonicalString(decodeSnapshot(encodeSnapshot(a.doc)))).toBe(canonicalString(a.doc));
   });
 });
 

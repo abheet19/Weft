@@ -105,7 +105,12 @@ export function localDeleteAt(doc: Doc, index: PositionIndex, me: ReplicaId, nex
   return deleteTargets(doc, me, nextSeq, targets);
 }
 
-export function localFormat(doc: Doc, me: ReplicaId, nextSeq: number, visibleFrom: number, visibleTo: number, mark: MarkName, active: boolean, href?: string): { ops: readonly Op[]; doc: Doc } {
+/**
+ * Format visible `[from, to)` with `mark`. A value-carrying mark takes its value where the op needs
+ * it: `link` an `href`, a colour a `value` (design S6). The value rides only an ACTIVE write — turning
+ * a mark off carries none. Both are validated at the wire; here they are passed through unread.
+ */
+export function localFormat(doc: Doc, me: ReplicaId, nextSeq: number, visibleFrom: number, visibleTo: number, mark: MarkName, active: boolean, value?: string): { ops: readonly Op[]; doc: Doc } {
   const visible = visibleItems(doc);
   checkIndex(visibleFrom, visible.length, 'visibleFrom');
   checkIndex(visibleTo, visible.length, 'visibleTo');
@@ -113,15 +118,14 @@ export function localFormat(doc: Doc, me: ReplicaId, nextSeq: number, visibleFro
   const targets = visible.slice(visibleFrom, visibleTo).map((item) => item.id);
   // One lamport for the whole logical format, so the chunks of a split range agree with each other.
   const lamport = nextFormatLamport(doc);
+  // A link stores its value under `href`, a colour under `value`; every other mark carries neither.
+  const carry: { href?: string } | { value?: string } | Record<string, never> =
+    !active || value === undefined ? {} : mark === 'link' ? { href: value } : mark === 'textColor' || mark === 'highlightColor' ? { value } : {};
   const ops: Op[] = [];
   for (let i = 0; i < targets.length; i += MAX_FMT_TARGETS) {
     const id = { replica: me, seq: nextSeq + ops.length };
     const chunk = targets.slice(i, i + MAX_FMT_TARGETS);
-    ops.push(
-      mark === 'link' && active && href !== undefined
-        ? { t: 'fmt', id, targets: chunk, mark, active, lamport, href }
-        : { t: 'fmt', id, targets: chunk, mark, active, lamport },
-    );
+    ops.push({ t: 'fmt', id, targets: chunk, mark, active, lamport, ...carry });
   }
   return { ops, doc: mustApply(doc, ops) };
 }

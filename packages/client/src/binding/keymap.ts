@@ -19,12 +19,12 @@ function nodeType(name: string): NodeType {
 }
 
 /** The block types whose Enter continues them. Headings deliberately not: Enter at the end of a heading starts a paragraph, as everywhere. */
-const CONTINUING: ReadonlySet<NodeType> = new Set([nodeType('bullet_item'), nodeType('quote')]);
+const CONTINUING: ReadonlySet<NodeType> = new Set([nodeType('bullet_item'), nodeType('ordered_item'), nodeType('check_item'), nodeType('quote')]);
 
-/** Enter inside a bullet item or quote: continue the type at the end of a non-empty one, end the run in an empty one, else decline. */
+/** Enter inside a continuing block (bullet, numbered, checklist or quote): continue the type at the end of a non-empty one, end the run in an empty one, else decline. A continued checklist item starts UNCHECKED — a new line is not done just because the line above it is. */
 export const enterInListBlock: Command = (state, dispatch) => {
   const { $from, empty } = state.selection;
   if (!empty || $from.depth !== 1 || !CONTINUING.has($from.parent.type)) return false;
   if ($from.parent.content.size === 0) return setBlockType(nodeType('paragraph'))(state, dispatch);
-  return splitBlockAs((node, atEnd) => (atEnd && CONTINUING.has(node.type) ? { type: node.type, attrs: node.attrs } : null))(state, dispatch);
+  return splitBlockAs((node, atEnd) => (atEnd && CONTINUING.has(node.type) ? { type: node.type, attrs: node.type === nodeType('check_item') ? { checked: false } : node.attrs } : null))(state, dispatch);
 };

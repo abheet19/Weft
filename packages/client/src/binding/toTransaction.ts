@@ -113,32 +113,36 @@ function markDiff(tr: Transaction, start: number, block: PMNode, was: readonly I
     while (k < is.length) {
       const wasM = find((was[k] as InlineTok).marks, name);
       const isM = find((is[k] as InlineTok).marks, name);
-      const add = isM !== undefined && (wasM === undefined || wasM.href !== isM.href);
-      const remove = wasM !== undefined && (isM === undefined || wasM.href !== isM.href);
+      // A value-carrying mark whose value changed is a remove-then-add, so the DOM shows the new href/colour.
+      const add = isM !== undefined && (wasM === undefined || wasM.value !== isM.value);
+      const remove = wasM !== undefined && (isM === undefined || wasM.value !== isM.value);
       if (!add && !remove) {
         k++;
         continue;
       }
-      // Extend a run of tokens with the same add/remove decision and (for additions) the same href.
+      // Extend a run of tokens with the same add/remove decision and (for additions) the same value.
       let j = k + 1;
       while (j < is.length) {
         const w2 = find((was[j] as InlineTok).marks, name);
         const i2 = find((is[j] as InlineTok).marks, name);
-        const a2 = i2 !== undefined && (w2 === undefined || w2.href !== i2.href);
-        const r2 = w2 !== undefined && (i2 === undefined || w2.href !== i2.href);
-        if (a2 !== add || r2 !== remove || (add && i2?.href !== isM?.href)) break;
+        const a2 = i2 !== undefined && (w2 === undefined || w2.value !== i2.value);
+        const r2 = w2 !== undefined && (i2 === undefined || w2.value !== i2.value);
+        if (a2 !== add || r2 !== remove || (add && i2?.value !== isM?.value)) break;
         j++;
       }
       const from = tokenPos(start, entries, k);
       const to = tokenPos(start, entries, j);
       if (remove) removals.push([from, to]);
-      if (add) additions.push([from, to, isM?.href]);
+      if (add) additions.push([from, to, isM?.value]);
       k = j;
     }
     const type = schema.marks[name];
     if (type === undefined) continue;
     for (const [from, to] of removals) tr.removeMark(from, to, type);
-    for (const [from, to, href] of additions) tr.addMark(from, to, name === 'link' ? type.create({ href: href ?? '' }) : type.create());
+    for (const [from, to, value] of additions) {
+      const mark = name === 'link' ? type.create({ href: value ?? '' }) : name === 'textColor' || name === 'highlightColor' ? type.create({ color: value ?? '' }) : type.create();
+      tr.addMark(from, to, mark);
+    }
   }
 }
 

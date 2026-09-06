@@ -13,9 +13,13 @@ import type { Mark, Node as PMNode } from 'prosemirror-model';
 import { schema } from './schema.ts';
 import { blocksOfItems, type ActiveMark, type Block, type InlineTok } from './tokens.ts';
 
-/** ProseMirror marks for a set of active CRDT marks. A link's href is its attr; the others are attr-less. */
+/** ProseMirror marks for a set of active CRDT marks. A value-carrying mark takes its value into the attr the schema names — a link's `href`, a colour's `color`; the rest are attr-less. */
 function pmMarks(marks: readonly ActiveMark[]): readonly Mark[] {
-  return marks.map((m) => (m.name === 'link' ? schema.marks.link!.create({ href: m.href ?? '' }) : schema.marks[m.name]!.create()));
+  return marks.map((m) => {
+    if (m.name === 'link') return schema.marks.link!.create({ href: m.value ?? '' });
+    if (m.name === 'textColor' || m.name === 'highlightColor') return schema.marks[m.name]!.create({ color: m.value ?? '' });
+    return schema.marks[m.name]!.create();
+  });
 }
 
 /** Inline nodes for a block's tokens: runs of chars with equal marks coalesce into one text node; a break is a hard_break carrying the same marks so `state.doc.eq(normalize(...))` holds. */
@@ -42,18 +46,26 @@ export function inlineNodesOf(inlines: readonly InlineTok[]): PMNode[] {
 }
 
 function sameActive(a: readonly ActiveMark[], b: readonly ActiveMark[]): boolean {
-  return a.length === b.length && a.every((m, i) => m.name === (b[i] as ActiveMark).name && m.href === (b[i] as ActiveMark).href);
+  return a.length === b.length && a.every((m, i) => m.name === (b[i] as ActiveMark).name && m.value === (b[i] as ActiveMark).value);
 }
 
-/** The schema node for one block from its attrs and inline nodes. A heading without a level is an h1; a level on anything else is dropped. */
+/** The schema node for one block from its attrs and inline nodes. A heading without a level is an h1; a level on anything else is dropped; a checklist item's tick defaults to unticked; a divider with content (which the UI never makes, but a raw CRDT sequence can) shows as a paragraph rather than losing its text. */
 function blockNodeOf(attrs: BlockAttrs, content: readonly PMNode[]): PMNode {
   switch (attrs.type) {
     case 'heading':
       return schema.node('heading', { level: attrs.level ?? 1 }, content);
     case 'bullet':
       return schema.node('bullet_item', null, content);
+    case 'ordered':
+      return schema.node('ordered_item', null, content);
+    case 'check':
+      return schema.node('check_item', { checked: attrs.checked === true }, content);
     case 'quote':
       return schema.node('quote', null, content);
+    case 'code':
+      return schema.node('code_block', null, content);
+    case 'divider':
+      return content.length === 0 ? schema.node('divider') : schema.node('paragraph', null, content);
     default:
       return schema.node('paragraph', null, content);
   }

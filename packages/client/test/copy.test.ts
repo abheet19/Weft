@@ -42,7 +42,7 @@ describe('errorCard', () => {
 describe('notices and card actions', () => {
   it('are the words of 03-UI §4.7, §4.9 and the F9/F10 flows', () => {
     expect(NOTICE.merged(12)).toBe('Back online — 12 offline edits merged.');
-    expect(NOTICE.showInInspector).toBe('Show in Inspector');
+    expect(NOTICE.showInInspector).toBe('Open sidebar');
     expect(NOTICE.startedFresh('k7m2p9qa')).toBe('Started fresh. The previous document is kept on this device as weft:k7m2p9qa.');
     expect(CARD).toEqual({ retry: 'Retry', startFresh: 'Start fresh (keeps a copy)', empty: 'Start writing, or press ⌘K' });
   });

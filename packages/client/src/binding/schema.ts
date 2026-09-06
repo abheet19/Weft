@@ -18,6 +18,14 @@ export function safeHref(href: unknown): string {
   return typeof href === 'string' && SAFE_HREF_SCHEME.test(href) ? href : '#';
 }
 
+/** A colour a mark may carry (E56): only a `#rrggbb`/`#rrggbbaa` hex reaches a `style` attribute, so no attacker-chosen string (`red;position:fixed…`) is ever rendered. Mirrors the protocol's `MARK_COLOR_RE`; a mismatch renders no colour at all. */
+const MARK_COLOR = /^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+
+/** The colour to put in a `style`, or `null` when the value is not a safe hex (so `toDOM` omits the style rather than emit an unsafe one). */
+export function safeColor(color: unknown): string | null {
+  return typeof color === 'string' && MARK_COLOR.test(color) ? color : null;
+}
+
 const nodes: Record<string, NodeSpec> = {
   doc: { content: 'block+' },
   paragraph: {
@@ -40,8 +48,27 @@ const nodes: Record<string, NodeSpec> = {
     content: 'inline*',
     group: 'block',
     defining: true,
-    parseDOM: [{ tag: 'li' }],
+    parseDOM: [{ tag: 'li:not([data-ordered]):not([data-check])' }],
     toDOM: (): DOMOutputSpec => ['li', 0],
+  },
+  // A numbered item (S6): another bare <li>, marked so the page CSS numbers it with a counter; still
+  // no <ol> wrapper, because the CRDT boundary carries one BlockAttrs and nothing above it.
+  ordered_item: {
+    content: 'inline*',
+    group: 'block',
+    defining: true,
+    parseDOM: [{ tag: 'li[data-ordered]' }],
+    toDOM: (): DOMOutputSpec => ['li', { 'data-ordered': 'true' }, 0],
+  },
+  // A checklist item (S6): its `checked` is a COLLABORATIVE attribute — a `blk` register on the
+  // boundary, LWW like a heading's `level` — so a tick made offline merges like any other edit.
+  check_item: {
+    attrs: { checked: { default: false } },
+    content: 'inline*',
+    group: 'block',
+    defining: true,
+    parseDOM: [{ tag: 'li[data-check]', getAttrs: (dom) => ({ checked: dom.getAttribute('data-checked') === 'true' }) }],
+    toDOM: (node): DOMOutputSpec => ['li', { 'data-check': 'true', 'data-checked': node.attrs.checked === true ? 'true' : 'false' }, 0],
   },
   quote: {
     content: 'inline*',
@@ -49,6 +76,26 @@ const nodes: Record<string, NodeSpec> = {
     defining: true,
     parseDOM: [{ tag: 'blockquote' }],
     toDOM: (): DOMOutputSpec => ['blockquote', 0],
+  },
+  // A code block (S6): LITERAL text — `marks: ''` forbids inline marks, `code`/`whitespace: 'pre'`
+  // keep spaces and newlines. Content is `inline*` so a soft break survives as a token on both sides
+  // (the binding strips any marks the CRDT still carries on a code block's chars, see tokens.ts).
+  code_block: {
+    content: 'inline*',
+    group: 'block',
+    marks: '',
+    code: true,
+    defining: true,
+    whitespace: 'pre',
+    parseDOM: [{ tag: 'pre', preserveWhitespace: 'full' }],
+    toDOM: (): DOMOutputSpec => ['pre', 0],
+  },
+  // A divider (S6): a content-less rule. In the CRDT it is a boundary that closes an EMPTY block, so
+  // it is the one block with no inline content; a leaf here.
+  divider: {
+    group: 'block',
+    parseDOM: [{ tag: 'hr' }],
+    toDOM: (): DOMOutputSpec => ['hr'],
   },
   text: { group: 'inline' },
   // A soft break inside a block (Shift+Enter, E52): an inline leaf, not a new block. The CRDT stores
@@ -74,6 +121,37 @@ const marks: Record<string, MarkSpec> = {
   code: {
     parseDOM: [{ tag: 'code' }],
     toDOM: (): DOMOutputSpec => ['code', 0],
+  },
+  underline: {
+    parseDOM: [{ tag: 'u' }, { style: 'text-decoration=underline' }, { style: 'text-decoration-line=underline' }],
+    toDOM: (): DOMOutputSpec => ['u', 0],
+  },
+  strikethrough: {
+    parseDOM: [{ tag: 's' }, { tag: 'del' }, { tag: 'strike' }, { style: 'text-decoration=line-through' }, { style: 'text-decoration-line=line-through' }],
+    toDOM: (): DOMOutputSpec => ['s', 0],
+  },
+  highlight: {
+    parseDOM: [{ tag: 'mark' }],
+    toDOM: (): DOMOutputSpec => ['mark', 0],
+  },
+  // A text colour (S6): a mark carrying a value under LWW, exactly as `link` carries `href`. Its value
+  // reaches the DOM only through `safeColor`, so a non-hex value renders as no colour rather than an
+  // arbitrary `style`.
+  textColor: {
+    attrs: { color: { default: '' } },
+    parseDOM: [{ style: 'color', getAttrs: (value) => ({ color: safeColor(value) ?? '' }) }],
+    toDOM: (mark): DOMOutputSpec => {
+      const color = safeColor(mark.attrs.color);
+      return color === null ? ['span', 0] : ['span', { style: `color:${color}` }, 0];
+    },
+  },
+  highlightColor: {
+    attrs: { color: { default: '' } },
+    parseDOM: [{ style: 'background-color', getAttrs: (value) => ({ color: safeColor(value) ?? '' }) }],
+    toDOM: (mark): DOMOutputSpec => {
+      const color = safeColor(mark.attrs.color);
+      return color === null ? ['span', 0] : ['span', { style: `background-color:${color}` }, 0];
+    },
   },
   link: {
     attrs: { href: {} },

@@ -46,7 +46,7 @@ export function errorCard(failure: Failure): CardCopy {
 
 export const NOTICE = {
   merged: (n: number): string => `Back online — ${n} offline edits merged.`,
-  showInInspector: 'Show in Inspector',
+  showInInspector: 'Open sidebar',
   startedFresh: (from: string): string => `Started fresh. The previous document is kept on this device as weft:${from}.`,
 } as const;
 

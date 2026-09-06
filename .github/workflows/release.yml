@@ -1,10 +1,13 @@
-# release.yml — on push to main, build the single deployment image and push it to GHCR, then deploy
-# to Fly. This is separate from ci.yml (the test gate); it does not touch it. The deploy job no-ops
-# cleanly until the owner adds a FLY_API_TOKEN repo secret.
+# release.yml — after CI passes on main, build the single deployment image, push it to GHCR, and
+# deploy to Fly. It runs on the *successful completion* of the CI workflow (never on a red build), and
+# builds/deploys the exact commit CI validated (`head_sha`). The deploy job no-ops cleanly until the
+# owner adds a FLY_API_TOKEN repo secret.
 name: release
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [main]
 
 permissions:
@@ -14,9 +17,13 @@ permissions:
 jobs:
   image:
     name: build & push image
+    # Only when CI itself went green — a failed test/build run must never publish or deploy.
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - uses: docker/setup-buildx-action@v3
 
@@ -52,6 +59,7 @@ jobs:
   # deploy no-op cleanly until the owner adds FLY_API_TOKEN, and start working the moment they do.
   gate:
     name: check for deploy token
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     outputs:
       have_token: ${{ steps.check.outputs.have_token }}
@@ -68,6 +76,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - uses: superfly/flyctl-actions/setup-flyctl@1.5
         with:

@@ -1,0 +1,3 @@
+# Weft pre-commit: lint (eslint + dep/purity linters) and the TypeScript check must pass
+# before a commit lands — the same gates CI runs, caught locally first.
+npm run lint && npm run typecheck

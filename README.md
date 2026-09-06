@@ -34,7 +34,17 @@ offline-first, conflict-free, and honest about exactly where your work is.
 
 <br>
 
+### ▶ &nbsp;[**Live demo → weft-abheet.fly.dev**](https://weft-abheet.fly.dev)
+
+<sub><b>Try it:</b> open a document at <code>/d/&lt;any-id&gt;</code>, then open the <b>same</b> <code>/d/&lt;id&gt;</code> in a second tab and watch the two windows converge.</sub>
+
+<br>
+
 </div>
+
+[![Weft — the persistent toolbar, a formatted document, the Outline rail, and the honest ● Saved pill, shot against the live deployment](docs/media/weft-editor.png)](https://weft-abheet.fly.dev)
+
+<div align="center"><sub>The persistent formatting toolbar · a live document with headings, lists and marks · the <b>Outline</b> rail · the time-travel <b>History</b> slider · the honest <code>● Saved</code> pill. A real capture of the deployed app — reproduce it with <code>node tools/capture-hero.mjs</code>.</sub></div>
 
 > [!NOTE]
 > **Where this project is.** Weft is **feature-complete**: all eight build slices (S1–S8) are built,
@@ -145,6 +155,15 @@ so in more words.
 A calm, opaque writing page with a thin layer of glass chrome, designed so the *sync state* is the
 most legible object on screen. "No collaborators" and "cannot reach the server" never look the same.
 
+**Everything in the editor is a real, mergeable edit** — every control is the *same* `prosemirror-commands` command its keyboard shortcut runs, so a click and a keystroke are one op:
+
+- **Marks** — bold, italic, underline, strikethrough, inline code, highlight, per-run **text & highlight colour**, and links (`⌘K`). Formatting is per-character last-writer-wins (the design says why).
+- **Blocks** — H1–H3, bulleted / numbered / **checklist** items (ticking a box is a collaborative edit, not a local DOM flag), block quote, code block, and a divider.
+- **The right rail — three tabs** — **Outline** (jump by heading, drawn live from the doc), **People** (presence: who is here, their colour, follow a peer's caret), and **Sync** (one calm status, with the per-replica state vectors + converged content hash and the chaos switches folded into **Diagnostics**).
+- **Time-travel** — a **History** slider replays the document op-by-op, read-only, with an optional per-author colour wash.
+- **⌘K command palette** — a real `<dialog>` with a focus trap and return-focus; the keyboard front door to theme, reduce-transparency, presence, time-travel and the same chaos switches the tests drive.
+- **Local undo/redo** — this replica's own actions, emitted as real inverse ops so the mirror stays consistent (I7).
+
 <div align="center">
 
 **[▶ Open the interactive prototype](docs/prototype/weft.html)** — every screen and flow, clickable, no build needed
@@ -154,6 +173,10 @@ most legible object on screen. "No collaborators" and "cannot reach the server" 
 | Live | Offline | Reconnected | Diverged (tripwire) |
 |------|---------|-------------|---------------------|
 | named carets, `● Saved`, peers | `● Offline · N on this device`, ghost avatars | inline strip: *Back online — 12 offline edits merged* | `● Diverged — report`, both hashes shown, cannot be hidden |
+
+[![Two browser contexts on the same document: the presence avatar stack, the People roster reading "2 here now", a remote caret, and text from both peers converged on one page](docs/media/weft-sync.png)](https://weft-abheet.fly.dev)
+
+<div align="center"><sub><b>The collaboration proof.</b> Two independent browser sessions on the same <code>/d/&lt;id&gt;</code>: the presence avatar stack, the <b>People</b> roster (<i>2 here now</i>), a peer's coloured remote caret, and both peers' text <b>converged on one page</b> — the impressive beat is the convergence, not the typing.</sub></div>
 
 The **Sync Inspector** panel shows each replica's state vector and content hash, drawn from real
 messages, so the demo's impressive moment is watching two documents *converge*, not watching

@@ -1,0 +1,21 @@
+# Build context excludes — keep the image build reproducible and small. In particular node_modules
+# is excluded so `COPY . .` never clobbers the clean `npm ci` tree with the host's (Windows) one.
+node_modules
+**/node_modules
+dist
+**/dist
+.vite
+coverage
+**/coverage
+data
+**/data
+playwright-report
+test-results
+.git
+.github
+*.pem
+*.key
+.env
+.env.*
+Thumbs.db
+.DS_Store

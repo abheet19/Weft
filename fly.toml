@@ -1,0 +1,33 @@
+# fly.toml — Weft on Fly.io as one machine: the Caddy edge + the loopback relay in a single
+# container. Fly terminates TLS and forces https; the client bundle is built with the public wss URL
+# through a build arg (VITE_WEFT_WS is inlined at build time). A Fly volume holds the relay's durable
+# per-document logs, and the machine is kept running because a relay must stay up to fan out edits.
+app = "weft"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+  [build.args]
+    # MUST be your app's public origin on the /ws path. Change the host if you rename the app.
+    VITE_WEFT_WS = "wss://weft.fly.dev/ws"
+
+[env]
+  PORT = "8080"
+  WEFT_DATA_DIR = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+# The relay's fsync'd append logs. `fly volumes create weft_data` before the first deploy.
+[[mounts]]
+  source = "weft_data"
+  destination = "/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

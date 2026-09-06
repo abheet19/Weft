@@ -1,0 +1,99 @@
+# Deploying Weft
+
+Weft ships as **one container**: the static client and the relay behind a single [Caddy](https://caddyserver.com)
+edge on one port. The relay binds only `127.0.0.1:4200` (a hard invariant of its type); Caddy is the
+only thing on a public interface and reverse-proxies the WebSocket path `/ws` to that loopback relay.
+The document id travels in-protocol (the `hello` frame), never in the URL, so a deep link is just
+`/<edge>/d/<docId>`.
+
+One knob decides where the browser opens its socket: **`VITE_WEFT_WS`**, inlined into the bundle at
+build time. It must be the *same origin* the page is served from, on the `/ws` path
+(`ws://localhost:8080/ws` locally, `wss://<your-app>/ws` behind TLS). Change it and you must rebuild.
+
+---
+
+## A. Local / self-host — `docker compose`
+
+```sh
+docker compose up --build          # build the image and start the edge on :8080
+```
+
+Then:
+
+1. Open <http://localhost:8080> — it redirects to a fresh `/d/<id>`.
+2. Copy that URL into a **second tab** (same `/d/<id>`).
+3. Type in either tab: edits converge live. The pill reads **Saved** once acknowledged.
+4. Prove persistence:
+
+   ```sh
+   docker compose restart          # relay restarts; the /data volume is retained
+   ```
+
+   Reload both tabs — the document's text is still there. It was replayed from the relay's fsync'd
+   append log on the named volume `weft_data`, not from the browsers.
+
+Stop and clean up:
+
+```sh
+docker compose down                # keeps the volume (and your documents)
+docker compose down -v             # ALSO deletes the volume — documents are gone
+```
+
+Notes:
+
+- Only `8080` is published. The relay's `4200` is loopback-inside-the-container and unreachable from
+  the host — every socket goes through Caddy.
+- To serve on another port, change the `ports:` mapping **and** `PORT`, and rebuild with a matching
+  `VITE_WEFT_WS` (e.g. `--build-arg VITE_WEFT_WS=ws://localhost:9000/ws`), because the URL is baked in.
+
+---
+
+## B. Go live on Fly.io
+
+Fly terminates TLS and forces https, so the bundle must be built with the **wss** origin of your app.
+`fly.toml` sets `VITE_WEFT_WS = "wss://weft.fly.dev/ws"` under `[build.args]`; if you pick a different
+app name, change that host to match.
+
+Ordered, first deploy:
+
+```sh
+# 1. Create the app WITHOUT deploying (skip if you keep the provided fly.toml's app name).
+fly launch --no-deploy
+#    …or, to reuse this fly.toml as-is:
+fly apps create weft
+
+# 2. Create the volume the relay's logs live on (single, 1 GB, in your region).
+fly volumes create weft_data -r iad -n 1 -s 1
+
+# 3. If you renamed the app, set the public origin the bundle talks to (build-time arg).
+#    Edit fly.toml's [build.args] VITE_WEFT_WS to wss://<your-app>.fly.dev/ws
+
+# 4. Deploy: builds the Dockerfile remotely and boots one machine.
+fly deploy
+```
+
+Open the printed `https://<app>.fly.dev`, and repeat the two-tab convergence check from section A.
+`min_machines_running = 1` and `auto_stop_machines = false` keep the relay up so it can fan out edits;
+`force_https = true` upgrades the page and the socket to TLS.
+
+### Enable automatic deploys from CI
+
+`.github/workflows/release.yml` builds and pushes the image to `ghcr.io/abheet19/weft` on every push
+to `main`, then deploys to Fly **only if** a `FLY_API_TOKEN` secret exists (until then the deploy job
+is skipped cleanly — the image still publishes). To turn it on:
+
+```sh
+fly tokens create deploy          # prints a token
+```
+
+Add it as a repo secret named **`FLY_API_TOKEN`** (GitHub → Settings → Secrets and variables →
+Actions → New repository secret). The next push to `main` deploys.
+
+### Free-tier reality (honest)
+
+Fly no longer offers a standing free allowance; a small always-on machine (`shared-cpu-1x`, 256 MB)
+plus a 1 GB volume is a low-single-digit-dollars-per-month affair, and it is billed. Because a relay
+must stay resident to fan out edits, the usual cost-saver — scale-to-zero — is off
+(`auto_stop_machines = false`), so you are paying for one machine to stay up. If you only need the
+self-host path, section A costs nothing beyond your own hardware. The GHCR image is public and free
+to pull regardless.

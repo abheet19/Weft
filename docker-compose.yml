@@ -1,0 +1,23 @@
+# docker-compose.yml — the one-command local / self-host path: build the single image, publish the
+# edge port on localhost, and keep the relay's fsync'd logs in a named volume across restarts. Only
+# Caddy's edge port is reachable; the relay's 4200 is never published.
+services:
+  weft:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Same-origin WS URL baked into the client bundle — matches the published port and /ws path.
+        VITE_WEFT_WS: ws://localhost:8080/ws
+    image: weft:local
+    ports:
+      - "8080:8080" # host:container — the only reachable port
+    environment:
+      PORT: "8080"
+      WEFT_DATA_DIR: /data
+    volumes:
+      - weft_data:/data # per-document append logs survive restart / up / down
+    restart: unless-stopped
+
+volumes:
+  weft_data:

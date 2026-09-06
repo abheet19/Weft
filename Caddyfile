@@ -1,0 +1,31 @@
+# Caddyfile — Weft's single edge. Serves the built client and reverse-proxies the WebSocket path to
+# the loopback relay. The relay listens only on 127.0.0.1:4200 (its type forbids any other bind) and
+# is reachable ONLY through this proxy. The browser opens exactly the /ws path (the VITE_WEFT_WS
+# baked into the bundle); the document id travels in-protocol (the `hello` frame), not in the URL,
+# so there is no per-document routing to do here.
+{
+	admin off
+	# TLS is terminated by the platform (Fly forces https) or absent locally; Caddy serves plain
+	# HTTP on $PORT and never tries to provision its own certificate.
+	auto_https off
+	persist_config off
+}
+
+:{$PORT:8080} {
+	encode zstd gzip
+
+	# The WebSocket path → the loopback relay. Caddy v2 forwards the Upgrade handshake transparently,
+	# so no extra header wiring is needed. `handle` blocks are mutually exclusive and matched in
+	# order, so /ws is proxied and never rewritten by the SPA fallback below.
+	handle /ws* {
+		reverse_proxy 127.0.0.1:4200
+	}
+
+	# Everything else is the static SPA. `/d/<docId>` deep links are served by index.html, which the
+	# client router then reads from location.pathname.
+	handle {
+		root * /srv/www
+		try_files {path} /index.html
+		file_server
+	}
+}

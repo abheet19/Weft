@@ -45,7 +45,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           # The public origin the bundle talks to. Match this to fly.toml's app host.
           build-args: |
-            VITE_WEFT_WS=wss://weft.fly.dev/ws
+            VITE_WEFT_WS=wss://weft-abheet.fly.dev/ws
 
   # `secrets` cannot be read inside an `if:` (GitHub does not expose that context there), so a tiny
   # gate job maps the secret to an output and the deploy job keys off that — this is what makes the

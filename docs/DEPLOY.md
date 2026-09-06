@@ -51,25 +51,21 @@ Notes:
 ## B. Go live on Fly.io
 
 Fly terminates TLS and forces https, so the bundle must be built with the **wss** origin of your app.
-`fly.toml` sets `VITE_WEFT_WS = "wss://weft.fly.dev/ws"` under `[build.args]`; if you pick a different
-app name, change that host to match.
+`fly.toml` sets `app = "weft-abheet"`, `primary_region = "bom"` (Mumbai), and
+`VITE_WEFT_WS = "wss://weft-abheet.fly.dev/ws"` under `[build.args]`. If you pick a different app name,
+change BOTH the `app` line and that host (and the `build-args` in `.github/workflows/release.yml`) to match.
 
 Ordered, first deploy:
 
 ```sh
-# 1. Create the app WITHOUT deploying (skip if you keep the provided fly.toml's app name).
-fly launch --no-deploy
-#    …or, to reuse this fly.toml as-is:
-fly apps create weft
+# 1. Create the app (reuses this fly.toml's name/region).
+fly apps create weft-abheet
 
-# 2. Create the volume the relay's logs live on (single, 1 GB, in your region).
-fly volumes create weft_data -r iad -n 1 -s 1
+# 2. Create the volume the relay's logs live on (single, 1 GB, in the app's region).
+fly volumes create weft_data -r bom -n 1 -s 1 -a weft-abheet
 
-# 3. If you renamed the app, set the public origin the bundle talks to (build-time arg).
-#    Edit fly.toml's [build.args] VITE_WEFT_WS to wss://<your-app>.fly.dev/ws
-
-# 4. Deploy: builds the Dockerfile remotely and boots one machine.
-fly deploy
+# 3. Deploy: builds the Dockerfile remotely and boots one machine.
+fly deploy -a weft-abheet
 ```
 
 Open the printed `https://<app>.fly.dev`, and repeat the two-tab convergence check from section A.

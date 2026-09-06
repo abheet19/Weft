@@ -13,6 +13,6 @@
   ],
   "scripts": {
     "typecheck": "tsc --noEmit -p .",
-    "test": "vitest run --coverage"
+    "test": "cross-env WEFT_COV=1 vitest run --coverage && vitest run"
   }
 }

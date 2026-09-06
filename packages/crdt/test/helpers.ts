@@ -201,11 +201,18 @@ export function interleave(logs: readonly (readonly Op[])[], rng: () => number):
   return out;
 }
 
-/** Number of property-test cases: the LLD's 10 000 under CI, 1 000 locally; `light` tests take a fifth; `fresh` (LLD §3: "1 000 with a fresh seed") a tenth. */
+/**
+ * Number of property-test cases: the LLD's 10 000 under CI, 1 000 locally; `light` tests take a fifth;
+ * `fresh` (LLD §3: "1 000 with a fresh seed") a tenth. The COVERAGE pass (`WEFT_COV=1`, set by the crdt
+ * `test` script) runs a small count instead: coverage is about which lines execute, not how many cases,
+ * and 10 000 instrumented cases in one synchronous fast-check loop block the vitest worker long enough to
+ * trip its `onTaskUpdate` heartbeat on a slow CI runner. The full 10 000 still run — in the second,
+ * uninstrumented `vitest run` pass, where each case is ~10× cheaper and the loop never blocks that long.
+ */
 export function numRuns(kind: 'heavy' | 'light' | 'fresh' = 'heavy'): number {
-  const heavy = process.env['CI'] ? 10_000 : 1_000;
+  const heavy = process.env['CI'] ? (process.env['WEFT_COV'] ? 400 : 10_000) : 1_000;
   if (kind === 'heavy') return heavy;
-  return Math.floor(heavy / (kind === 'light' ? 5 : 10));
+  return Math.max(1, Math.floor(heavy / (kind === 'light' ? 5 : 10)));
 }
 
 /** The seed of the reproducible run. Any constant works; this one is written down so a failure in CI can be replayed byte for byte. */
@@ -217,6 +224,8 @@ export const FIXED_SEED = 0x5eed;
  * not the only thing ever exercised). `examples` are replayed before either run.
  */
 export function assertBothSeeds<Ts extends unknown[]>(property: fc.IProperty<Ts>, examples: readonly Ts[] = []): void {
-  fc.assert(property, { numRuns: numRuns('heavy'), seed: FIXED_SEED, examples: [...examples], verbose: true });
-  fc.assert(property, { numRuns: numRuns('fresh'), verbose: true });
+  // No `verbose`: it accumulates every run in memory (heavy at 10 000 cases and a needless load on the
+  // worker); fast-check still reports the shrunk counterexample on failure, which is what a debugger needs.
+  fc.assert(property, { numRuns: numRuns('heavy'), seed: FIXED_SEED, examples: [...examples] });
+  fc.assert(property, { numRuns: numRuns('fresh') });
 }

@@ -3,7 +3,7 @@
 # through a build arg (VITE_WEFT_WS is inlined at build time). A Fly volume holds the relay's durable
 # per-document logs, and the machine is kept running because a relay must stay up to fan out edits.
 app = "weft-abheet"
-primary_region = "bom"
+primary_region = "sin"
 
 [build]
   dockerfile = "Dockerfile"

@@ -51,7 +51,7 @@ Notes:
 ## B. Go live on Fly.io
 
 Fly terminates TLS and forces https, so the bundle must be built with the **wss** origin of your app.
-`fly.toml` sets `app = "weft-abheet"`, `primary_region = "bom"` (Mumbai), and
+`fly.toml` sets `app = "weft-abheet"`, `primary_region = "sin"` (Singapore), and
 `VITE_WEFT_WS = "wss://weft-abheet.fly.dev/ws"` under `[build.args]`. If you pick a different app name,
 change BOTH the `app` line and that host (and the `build-args` in `.github/workflows/release.yml`) to match.
 
@@ -62,7 +62,7 @@ Ordered, first deploy:
 fly apps create weft-abheet
 
 # 2. Create the volume the relay's logs live on (single, 1 GB, in the app's region).
-fly volumes create weft_data -r bom -n 1 -s 1 -a weft-abheet
+fly volumes create weft_data -r sin -n 1 -s 1 -a weft-abheet
 
 # 3. Deploy: builds the Dockerfile remotely and boots one machine.
 fly deploy -a weft-abheet

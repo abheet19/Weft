@@ -42,6 +42,12 @@ offline-first, conflict-free, and honest about exactly where your work is.
 
 </div>
 
+[![Weft demo reel — typing a titled document, applying bold, a heading, a highlight and a list from the toolbar while the Outline fills in, ending on the honest ● Saved pill, recorded against the live deployment](docs/media/weft-demo.gif)](https://weft-abheet.fly.dev)
+
+<div align="center"><sub>A live editing pass: an <code>H1</code> title, a bold run, an <code>H2</code>, a highlight and a bulleted list applied from the persistent toolbar while the <b>Outline</b> rail fills in — ending on the honest <code>● Saved</code> pill. A real recording of the deployed app — reproduce it with <code>node tools/capture-reel.mjs</code>.</sub></div>
+
+<br>
+
 [![Weft — the persistent toolbar, a formatted document, the Outline rail, and the honest ● Saved pill, shot against the live deployment](docs/media/weft-editor.png)](https://weft-abheet.fly.dev)
 
 <div align="center"><sub>The persistent formatting toolbar · a live document with headings, lists and marks · the <b>Outline</b> rail · the time-travel <b>History</b> slider · the honest <code>● Saved</code> pill. A real capture of the deployed app — reproduce it with <code>node tools/capture-hero.mjs</code>.</sub></div>

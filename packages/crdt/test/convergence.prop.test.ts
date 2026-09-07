@@ -29,7 +29,7 @@ import {
   type Op,
 } from '../src/index.ts';
 import { arbSchedule, arbScript, perform } from './generators.ts';
-import { assertBothSeeds, char, del, fmt, healAll, id, ins, interleave, mulberry32, pairs, pull, R, REPLICAS, Replica, shuffle, block, blk } from './helpers.ts';
+import { char, del, fmt, FIXED_SEED, healAll, id, ins, interleave, mulberry32, numRuns, pairs, pull, R, REPLICAS, Replica, shuffle, block, blk } from './helpers.ts';
 
 /** One delivery step from `from` to `to` with chaos: a deliberate gap (must be rejected, doc untouched), a duplicate (must be a no-op), then a partial pull. */
 function chaoticDelivery(from: Replica, to: Replica, rng: () => number): void {
@@ -53,9 +53,13 @@ function chaoticDelivery(from: Replica, to: Replica, rng: () => number): void {
 }
 
 describe('I1 convergence under a partitioned network', () => {
-  it('three or four replicas editing through random partitions, partial, duplicated and gapped deliveries, then healing, hold I1, I2, I3, I5 and I12 together — with the fixed seed and with a fresh one', () => {
-    assertBothSeeds(
-      fc.property(fc.integer({ min: 3, max: 4 }), fc.array(arbScript, { minLength: 4, maxLength: 4 }), arbSchedule, fc.nat(), (n, scripts, schedule, seed) => {
+  // Split fixed-seed and fresh-seed into separate `it()`s (rather than one `assertBothSeeds` call)
+  // so vitest gets a task-report boundary between the two ~10 000-case fc.assert runs. Combined into
+  // one it(), this property's ~45s of continuous synchronous work occasionally outlasted the CI
+  // worker's task-update heartbeat on a slow/contended windows-latest runner ("Timeout calling
+  // onTaskUpdate" — every assertion still passed; it was a reporting timeout, not a failure).
+  // Splitting changes no coverage: same seeds, same case counts, same examples.
+  const property = fc.property(fc.integer({ min: 3, max: 4 }), fc.array(arbScript, { minLength: 4, maxLength: 4 }), arbSchedule, fc.nat(), (n, scripts, schedule, seed) => {
         const rng = mulberry32(seed);
         const reps = REPLICAS.slice(0, n).map((r) => new Replica(r));
         const cursor = reps.map(() => 0);
@@ -115,8 +119,14 @@ describe('I1 convergence under a partitioned network', () => {
           expect(svEqual(back.sv, rep.doc.sv)).toBe(true);
           expect(encodeSnapshot(back)).toEqual(snap);
         }
-      }),
-    );
+      });
+
+  it('three or four replicas editing through random partitions, partial, duplicated and gapped deliveries, then healing, hold I1, I2, I3, I5 and I12 together — with the fixed seed', () => {
+    fc.assert(property, { numRuns: numRuns('heavy'), seed: FIXED_SEED });
+  });
+
+  it('… and with a fresh one', () => {
+    fc.assert(property, { numRuns: numRuns('fresh') });
   });
 });
 
@@ -208,26 +218,33 @@ const P3: Op[][] = [
 ];
 
 describe('I1 under hostile timing of well-formed ops', () => {
-  it('hostile logs (equal lamports on overlapping targets, lamports at the bound, dependencies that never exist) replayed in replica order, reverse order, round robin and a random interleaving reach one sv, one parked set and one canonical string, with no rejection — with the fixed seed, a fresh seed, and the review’s P3 as the first example', () => {
-    assertBothSeeds(
-      fc.property(arbHostileLogs, fc.nat(), (logs, seed) => {
-        const rng = mulberry32(seed);
-        const orders: Op[][] = [logs.flat(), [...logs].reverse().flat(), roundRobin(logs), interleave(logs, rng)];
-        const docs = orders.map((order) => {
-          const { doc, results } = applyAll(emptyDoc(), order);
-          for (const r of results) expect(['applied', 'pending'], JSON.stringify(r)).toContain(r.kind);
-          return doc;
-        });
-        const reference = fingerprint(docs[0] as Doc);
-        for (const doc of docs) expect(fingerprint(doc)).toEqual(reference);
-        // I12 still holds with parked ops in the picture (E11).
-        for (const doc of docs) {
-          const back = decodeSnapshot(JSON.parse(JSON.stringify(encodeSnapshot(doc))));
-          expect(fingerprint(back)).toEqual(reference);
-          expect(back.formatLamport).toBe(doc.formatLamport);
-        }
-      }),
-      [[P3, 0]],
-    );
+  // Same split as above, same reason: one continuous ~23s fc.assert-pair, no reporting boundary
+  // between the fixed- and fresh-seed runs, occasionally outlasting CI's task-update heartbeat on a
+  // slow windows-latest runner. `examples` (the review's P3 counterexample) stays on the fixed-seed
+  // run only, exactly as `assertBothSeeds` applied it.
+  const property = fc.property(arbHostileLogs, fc.nat(), (logs, seed) => {
+    const rng = mulberry32(seed);
+    const orders: Op[][] = [logs.flat(), [...logs].reverse().flat(), roundRobin(logs), interleave(logs, rng)];
+    const docs = orders.map((order) => {
+      const { doc, results } = applyAll(emptyDoc(), order);
+      for (const r of results) expect(['applied', 'pending'], JSON.stringify(r)).toContain(r.kind);
+      return doc;
+    });
+    const reference = fingerprint(docs[0] as Doc);
+    for (const doc of docs) expect(fingerprint(doc)).toEqual(reference);
+    // I12 still holds with parked ops in the picture (E11).
+    for (const doc of docs) {
+      const back = decodeSnapshot(JSON.parse(JSON.stringify(encodeSnapshot(doc))));
+      expect(fingerprint(back)).toEqual(reference);
+      expect(back.formatLamport).toBe(doc.formatLamport);
+    }
+  });
+
+  it('hostile logs (equal lamports on overlapping targets, lamports at the bound, dependencies that never exist) replayed in replica order, reverse order, round robin and a random interleaving reach one sv, one parked set and one canonical string, with no rejection — with the fixed seed, and the review’s P3 as the first example', () => {
+    fc.assert(property, { numRuns: numRuns('heavy'), seed: FIXED_SEED, examples: [[P3, 0]] });
+  });
+
+  it('… and with a fresh seed', () => {
+    fc.assert(property, { numRuns: numRuns('fresh') });
   });
 });

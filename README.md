@@ -42,6 +42,12 @@ offline-first, conflict-free, and honest about exactly where your work is.
 
 </div>
 
+[![Weft hero demo — two browser windows on one document: both people typing at once, then window 2 dropped offline while both keep typing so the documents visibly diverge, then reconnecting and every edit merging with no conflict prompt](docs/demo/weft-merge.gif)](https://weft-abheet.fly.dev)
+
+<div align="center"><sub><b>The whole product in seventeen seconds.</b> Two independent browser sessions on the same <code>/d/&lt;id&gt;</code> — both typing at once, then window&nbsp;2 is cut off the network (a real <code>setOffline</code>: <code>navigator.onLine</code> flips, the socket drops, the pill counts <code>36 changes on this device</code>) while <b>both</b> keep typing, so the two documents visibly <b>diverge</b>. On reconnect they <b>converge</b> — Weft's own <code>Back online — 36 offline edits merged.</code> strip, both pills back to <code>● Saved</code>, and <b>no "resolve conflict" dialog</b>, because a CRDT has nothing to ask. A real recording of the deployed app — reproduce it with <code>node tools/record-demo.mjs</code>.</sub></div>
+
+<br>
+
 [![Weft demo reel — typing a titled document, applying bold, a heading, a highlight and a list from the toolbar while the Outline fills in, ending on the honest ● Saved pill, recorded against the live deployment](docs/media/weft-demo.gif)](https://weft-abheet.fly.dev)
 
 <div align="center"><sub>A live editing pass: an <code>H1</code> title, a bold run, an <code>H2</code>, a highlight and a bulleted list applied from the persistent toolbar while the <b>Outline</b> rail fills in — ending on the honest <code>● Saved</code> pill. A real recording of the deployed app — reproduce it with <code>node tools/capture-reel.mjs</code>.</sub></div>
@@ -287,6 +293,14 @@ npm run dev          # server on 127.0.0.1:4200 + client on 127.0.0.1:5173 — o
 # convergence proofs without a browser:
 node packages\crdt\examples\two-replicas.mjs
 node packages\client\examples\two-headless.mjs
+```
+
+Regenerate the README media (each drives the **live** deployment unless `WEFT_URL` says otherwise):
+
+```powershell
+node tools/record-demo.mjs   # the hero GIF - two windows, offline, merge (Playwright + Python/Pillow)
+node tools/capture-reel.mjs  # the editing reel                           (Playwright + ffmpeg)
+node tools/capture-hero.mjs  # the still screenshots                      (Playwright)
 ```
 
 ## ⌗ Where this project is

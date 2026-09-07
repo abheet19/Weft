@@ -21,3 +21,6 @@ Thumbs.db
 # Playwright e2e output
 playwright-report/
 test-results/
+
+# raw frames from tools/record-demo.mjs (the composed GIF is committed, the frames are not)
+.demo-frames/

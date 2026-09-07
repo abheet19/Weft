@@ -2,7 +2,21 @@
    prototype expands the "same as light block" comment of §2.2 into the actual light values) plus
    the prototype-only additions of section 1b, which the build keeps: --gl-inner is the ≥60%-alpha
    inner fill every text label inside glass sits on (§2.1). One change, marked below: --proto-h (the
-   prototype scene bar height) is not ported because the scene bar is not part of the product. */
+   prototype scene bar height) is not ported because the scene bar is not part of the product.
+
+   REAL DEPENDENCY: @abheet19/glass (https://github.com/abheet19/glass). ./vendor/glass-base.css
+   is a committed, generated copy of glass's src/tokens.css — see tools/sync-glass.mjs at the repo
+   root for how it's produced and kept current; a live npm/file: link isn't usable here because the
+   Fly.io Dockerfile builds from this repo alone, with no sibling directory in the build context.
+
+   This is an override, not a redesign: every custom property below that glass's base grammar also
+   defines (--r-1/2/3, --ease, --t-fast/base/slow, --gl-blur/edge/fill/spec/shadow, --ink/-2/-3,
+   --bg/--raised/--line, --fs-0/1/2, --font-ui/mono, --accent, --ok/--warn/--bad) is redeclared in
+   this file's own :root block below, which — later in the cascade at equal specificity — wins.
+   Weft's own oklch(78% 0.14 200) teal/indigo pair and every other value here is therefore
+   completely unchanged by the import; it only adds tokens Weft doesn't already define. */
+@import "./vendor/glass-base.css";
+
 :root {
   /* ground & surfaces */
   --bg:        oklch(15% 0.012 250);   /* dark navy-grey, never pure black */

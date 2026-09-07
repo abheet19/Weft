@@ -28,15 +28,18 @@ const REPLICAS = ['abcdefghijklm', 'bcdefghijklmn', 'cdefghijklmno'];
 // left out), concurrentMs (same op count, parked path) and floodMs (the review's 2 s target) were
 // added in the S1 hardening (LLD §11 E13).
 // Perf pass (2026-09-06): two SOFT budgets were reconciled to the honest measured cost after
-// profiling found no clean win that keeps the code correct. snapshotMs 300 → 340: encode rebuilds
-// every item with a fixed key order (load-bearing — two replicas must encode byte-identical bytes,
-// so an Item reference cannot be reused) and decode is deliberate hostile-input validation of every
-// item; both measure ≈330 ms quiet (prior CI/dev runs and an isolated profile), and this loaded dev
-// box (~24 background daemons + a dev server) inflates encode+decode to ~440–520 ms — still inside
-// the 2× hard gate. heapMB 200 → 210: the connected-replay high-water mark is a stable ~207 MB of
-// live persistent structure plus not-yet-collected garbage; no reduction was available without
-// changing the CRDT. Both remain soft warns; only >2× a budget fails the gate.
-const BUDGET = { replayMs: 1_500, concurrentMs: 1_500, indexMs: 150, snapshotMs: 340, jsonMs: 300, floodMs: 2_000, heapMB: 210 };
+// profiling found no clean win that keeps the code correct. heapMB 200 → 210: the connected-replay
+// high-water mark is a stable ~207 MB of live persistent structure plus not-yet-collected garbage; no
+// reduction was available without changing the CRDT.
+// S6 redesign (2026-09-07): snapshotMs 340 → 500. Every item now carries the expanded mark set (9
+// marks incl. colour values, up from 4), so encoding/decoding 100k items genuinely does more work —
+// this is real cost from real functionality, not noise. Measured quiet-local 398.7 ms (already over
+// the old 340 ms budget) and 713.7 ms on a loaded windows-latest CI runner (~1.8× local, consistent
+// with this session's other CI-vs-local ratios) — that reading crossed the OLD budget's 2× hard-fail
+// line. 500 ms keeps both readings comfortably inside a "warn", while a genuine algorithmic regression
+// (an accidental O(n²) in encode/decode) would still blow well past 1000 ms and fail the gate.
+// Both budgets remain soft warns; only >2× a budget fails the gate.
+const BUDGET = { replayMs: 1_500, concurrentMs: 1_500, indexMs: 150, snapshotMs: 500, jsonMs: 300, floodMs: 2_000, heapMB: 210 };
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz ';
 
 /** Deterministic PRNG so two runs on one machine generate the same script. */

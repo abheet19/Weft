@@ -73,6 +73,10 @@ export function Shell({ url, docId }: ShellProps): React.JSX.Element {
   const [flat, setFlat] = useState(false);
   const [nameOverride, setNameOverride] = useState<string | null>(null);
   const viewRef = useRef<EditorView | null>(null);
+  /** Where the persistent toolbar portals to (S6): a sibling of `.page`, not nested inside its padded
+      paper, so the toolbar is a bar ABOVE the document rather than content floating inside it. Editor
+      still owns the live `view`/`state` the toolbar needs; only its DOM position moves. */
+  const [toolbarSlot, setToolbarSlot] = useState<HTMLDivElement | null>(null);
   useEffect(() => {
     if (theme !== null) document.documentElement.dataset.theme = theme;
   }, [theme]);
@@ -227,12 +231,17 @@ export function Shell({ url, docId }: ShellProps): React.JSX.Element {
           {notices.map((notice) => (
             <Notice key={notice.id} notice={notice} onDismiss={() => dismiss(notice.id)} />
           ))}
+          {/* `display: contents` (shell.css) — this div does not participate in layout itself; the
+              portaled .toolbar becomes, visually and for sizing, a direct child of .col, matching the
+              width/centering rule .toolbar already shares with .page (03-UI: the toolbar is a bar above
+              the document, not content inside it). */}
+          <div className="toolbar-host" ref={setToolbarSlot} />
           <Page mode={mode} card={failure === null ? null : errorCard(failure)} onRetry={retry} onStartFresh={startFresh}>
             {ready !== null && scrubbing ? (
               <HistoryDoc base={ready.session.runner.history().base} ops={ready.session.runner.history().ops} position={historyPos ?? historyLength} showAuthors={showAuthors} />
             ) : (
               ready !== null && (
-                <Editor host={ready.host} onFault={onFault} peers={ready.snapshot.peers} reportCursor={reportCursor} follow={follow} onExitFollow={() => setFollow(null)} onView={(view) => (viewRef.current = view)} onOutline={setOutline} />
+                <Editor host={ready.host} onFault={onFault} peers={ready.snapshot.peers} reportCursor={reportCursor} follow={follow} onExitFollow={() => setFollow(null)} onView={(view) => (viewRef.current = view)} onOutline={setOutline} toolbarSlot={toolbarSlot} />
               )
             )}
           </Page>

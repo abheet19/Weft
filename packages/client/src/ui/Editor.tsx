@@ -9,6 +9,7 @@
 // the shell; an editor is mounted only once the document is loaded.
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { baseKeymap } from 'prosemirror-commands';
 import { keymap } from 'prosemirror-keymap';
 import type { Node as PMNode } from 'prosemirror-model';
@@ -39,6 +40,11 @@ interface EditorProps {
   onView?: (view: EditorView | null) => void;
   /** The document's headings after each change (deduped), for the sidebar's Outline tab. */
   onOutline?: (outline: readonly OutlineItem[]) => void;
+  /** Where the toolbar portals to — a DOM node outside `.page`, owned by Shell (S6). Editor still
+      computes `view`/`state` and passes them to the same `<Toolbar>`; only its DOM position moves, so
+      it renders as a bar above the document instead of content inside the paper card. Null while Shell
+      hasn't mounted the slot yet, or when there is nowhere to put it (e.g. no toolbar shown). */
+  toolbarSlot: HTMLDivElement | null;
 }
 
 /** The headings of the doc in order, each with the PM position of its start (for the outline to jump to). */
@@ -70,7 +76,7 @@ function cursorOf(host: BindingHost, view: EditorView): PresenceState['cursor'] 
   }
 }
 
-export function Editor({ host, onFault, peers, reportCursor, follow, onExitFollow, onView, onOutline }: EditorProps): React.JSX.Element {
+export function Editor({ host, onFault, peers, reportCursor, follow, onExitFollow, onView, onOutline, toolbarSlot }: EditorProps): React.JSX.Element {
   const mount = useRef<HTMLElement>(null);
   const [view, setView] = useState<EditorView | null>(null);
   const [state, setState] = useState<EditorState | null>(null);
@@ -166,7 +172,10 @@ export function Editor({ host, onFault, peers, reportCursor, follow, onExitFollo
 
   return (
     <div className={`editor-wrap${follow === null ? '' : ' following'}`} style={style}>
-      {view !== null && state !== null && <Toolbar view={view} state={state} linkOpen={linkOpen} setLinkOpen={setLinkOpen} undo={host.undo} redo={host.redo} />}
+      {toolbarSlot !== null &&
+        view !== null &&
+        state !== null &&
+        createPortal(<Toolbar view={view} state={state} linkOpen={linkOpen} setLinkOpen={setLinkOpen} undo={host.undo} redo={host.redo} />, toolbarSlot)}
       {follow !== null && (
         <div className="follow-tag" style={style}>
           Following <b>{peers.get(follow)?.state.name ?? 'peer'}</b> · any key or scroll exits

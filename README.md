@@ -59,7 +59,7 @@ offline-first, conflict-free, and honest about exactly where your work is.
 <div align="center"><sub>The persistent formatting toolbar · a live document with headings, lists and marks · the <b>Outline</b> rail · the time-travel <b>History</b> slider · the honest <code>● Saved</code> pill. A current local production-build capture — reproduce it with <code>node tools/capture-hero.mjs</code>.</sub></div>
 
 > [!TIP]
-> **Current verification (8 September 2026):** [executed workflows and limits](docs/VERIFICATION.md) · [setup/deploy operations](docs/DEPLOY.md). Divider insertion at the end of a paragraph now preserves its missing explicit boundary. Conversions to/from divider atoms replace a whole node safely. Undo/redo retains color values and checklist checked state.
+> **Current verification (9 September 2026):** [executed workflows and limits](docs/VERIFICATION.md) · [setup/deploy operations](docs/DEPLOY.md). Divider insertion at the end of a paragraph now preserves its missing explicit boundary. Conversions to/from divider atoms replace a whole node safely. Undo/redo retains color values and checklist checked state. The public edge now refuses framing and disables MIME sniffing.
 >
 > The two README PNG stills were refreshed from the current real **local production build** and isolated data. Existing GIFs are earlier recordings, retained for the longer walkthrough; they were not re-recorded in this pass.
 

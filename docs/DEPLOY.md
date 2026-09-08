@@ -1,6 +1,6 @@
 # Deploying Weft
 
-## Current existing app — 2026-09-08
+## Current existing app — 2026-09-09
 
 Routine releases target **`weft-abheet`** in `sin`; do not run first-install app/database/volume creation again. From this repository, after passing `npm run check` and `npm run docs:check`:
 
@@ -21,6 +21,10 @@ edge on one port. The relay binds only `127.0.0.1:4200` (a hard invariant of its
 only thing on a public interface and reverse-proxies the WebSocket path `/ws` to that loopback relay.
 The document id travels in-protocol (the `hello` frame), never in the URL, so a deep link is just
 `/<edge>/d/<docId>`.
+
+Caddy sends `X-Frame-Options: DENY` and `X-Content-Type-Options: nosniff` on public responses. Weft is
+a standalone editor, so it has no embedding contract; refusing frames also avoids clickjacking around
+the anonymous editing surface.
 
 One knob decides where the browser opens its socket: **`VITE_WEFT_WS`**, inlined into the bundle at
 build time. It must be the *same origin* the page is served from, on the `/ws` path

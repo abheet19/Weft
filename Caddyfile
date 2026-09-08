@@ -13,6 +13,12 @@
 
 :{$PORT:8080} {
 	encode zstd gzip
+	header {
+		# The editor is a standalone app and never needs to be framed. Keep the static edge aligned with
+		# the API-backed portfolio apps, and prevent MIME sniffing if an asset is ever mislabelled.
+		X-Frame-Options "DENY"
+		X-Content-Type-Options "nosniff"
+	}
 
 	# The WebSocket path → the loopback relay. Caddy v2 forwards the Upgrade handshake transparently,
 	# so no extra header wiring is needed. `handle` blocks are mutually exclusive and matched in

@@ -70,25 +70,28 @@ function captureEntry(before: Doc, ops: readonly Op[]): UndoEntry {
 function reinsertContent(content: ItemContent, me: ReplicaId, lamport: () => number): Content {
   if (content.kind === 'char') return { kind: 'char', text: content.text };
   if (content.kind === 'break') return { kind: 'break' };
-  const attrs: BlockAttrs = content.attrs.level === undefined ? { type: content.attrs.type } : { type: content.attrs.type, level: content.attrs.level };
+  const attrs: BlockAttrs = { ...content.attrs };
   return { kind: 'block', attrs, lamport: lamport(), replica: me };
 }
 
 /** Restore each target's previous state of `op.mark`, grouping targets that shared a previous state into one `fmt` op so a wide format inverts in a handful of ops, not one per character. */
 function invertFmt(op: Extract<Op, { t: 'fmt' }>, prev: readonly (MarkState | undefined)[], mint: () => ItemId, lamport: () => number, push: (op: Op) => void): void {
-  const groups = new Map<string, { active: boolean; href: string | undefined; targets: ItemId[] }>();
+  const groups = new Map<string, { active: boolean; href: string | undefined; value: string | undefined; targets: ItemId[] }>();
   op.targets.forEach((target, i) => {
     const before = prev[i];
     const active = before?.active ?? false; // an absent mark is restored to inactive, which renders identically
     const href = before?.href;
-    const key = `${String(active)}|${href ?? ''}`;
-    const group = groups.get(key) ?? { active, href, targets: [] };
+    const value = before?.value;
+    const key = JSON.stringify([active, href, value]);
+    const group = groups.get(key) ?? { active, href, value, targets: [] };
     group.targets.push(target);
     groups.set(key, group);
   });
   for (const group of groups.values()) {
     const base = { t: 'fmt' as const, id: mint(), targets: group.targets, mark: op.mark, active: group.active, lamport: lamport() };
-    push(op.mark === 'link' && group.active && group.href !== undefined ? { ...base, href: group.href } : base);
+    if (op.mark === 'link' && group.active && group.href !== undefined) push({ ...base, href: group.href });
+    else if ((op.mark === 'textColor' || op.mark === 'highlightColor') && group.active && group.value !== undefined) push({ ...base, value: group.value });
+    else push(base);
   }
 }
 

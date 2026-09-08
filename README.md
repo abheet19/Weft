@@ -54,9 +54,14 @@ offline-first, conflict-free, and honest about exactly where your work is.
 
 <br>
 
-[![Weft — the persistent toolbar, a formatted document, the Outline rail, and the honest ● Saved pill, shot against the live deployment](docs/media/weft-editor.png)](https://weft-abheet.fly.dev)
+[![Weft — the persistent toolbar, a formatted document, the Outline rail, and the honest ● Saved pill, captured from the current local production build](docs/media/weft-editor.png)](https://weft-abheet.fly.dev)
 
-<div align="center"><sub>The persistent formatting toolbar · a live document with headings, lists and marks · the <b>Outline</b> rail · the time-travel <b>History</b> slider · the honest <code>● Saved</code> pill. A real capture of the deployed app — reproduce it with <code>node tools/capture-hero.mjs</code>.</sub></div>
+<div align="center"><sub>The persistent formatting toolbar · a live document with headings, lists and marks · the <b>Outline</b> rail · the time-travel <b>History</b> slider · the honest <code>● Saved</code> pill. A current local production-build capture — reproduce it with <code>node tools/capture-hero.mjs</code>.</sub></div>
+
+> [!TIP]
+> **Current verification (8 September 2026):** [executed workflows and limits](docs/VERIFICATION.md) · [setup/deploy operations](docs/DEPLOY.md). Divider insertion at the end of a paragraph now preserves its missing explicit boundary. Conversions to/from divider atoms replace a whole node safely. Undo/redo retains color values and checklist checked state.
+>
+> The two README PNG stills were refreshed from the current real **local production build** and isolated data. Existing GIFs are earlier recordings, retained for the longer walkthrough; they were not re-recorded in this pass.
 
 > [!NOTE]
 > **Where this project is.** Weft is **feature-complete**: all eight build slices (S1–S8) are built,
@@ -91,9 +96,8 @@ offline-first, conflict-free, and honest about exactly where your work is.
 ## The problem
 
 Two people edit the same paragraph at the same time. One of them is on a train and the wifi drops
-for an hour. When it comes back, every editor you have used does one of three things: silently
-throws one person's work away, shows a "resolve conflict" dialog, or locks the document so only one
-person can type. None of those is acceptable, and the reason they happen is not the editor — it is
+for an hour. A system without an offline merge protocol can overwrite work, require a conflict decision, or
+block editing until the connection returns. None of those is acceptable, and the reason they happen is not the editor — it is
 that a document stored as *text* has no way to say *who typed what, next to what*.
 
 ## The one hard idea

@@ -236,3 +236,23 @@ describe('denied paths', () => {
     expect(l.history.redo.length).toBe(0);
   });
 });
+for (const mark of ['textColor', 'highlightColor'] as const) {
+  it(`undo and redo restore the value of ${mark}`, () => {
+    const l = new Local();
+    l.user((doc, me, seq) => localInsert(doc, me, seq, 0, { kind: 'char', text: 'a' }));
+    l.user((doc, me, seq) => localFormat(doc, me, seq, 0, 1, mark, true, 'red'));
+    l.user((doc, me, seq) => localFormat(doc, me, seq, 0, 1, mark, true, 'blue'));
+    l.undo();
+    expect(visibleItems(l.doc)[0]?.marks[mark]?.value).toBe('red');
+    l.redo();
+    expect(visibleItems(l.doc)[0]?.marks[mark]?.value).toBe('blue');
+  });
+}
+it('undo preserves the checked state of a deleted checklist boundary', () => {
+  const l = new Local();
+  l.user((doc, me, seq) => localInsert(doc, me, seq, 0, { kind: 'block', attrs: { type: 'check', checked: true }, lamport: 0, replica: me }));
+  l.user((doc, me, seq) => localDelete(doc, me, seq, 0, 1));
+  l.undo();
+  const restored = visibleItems(l.doc)[0]?.content;
+  expect(restored?.kind === 'block' && restored.attrs.checked).toBe(true);
+});

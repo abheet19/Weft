@@ -15,7 +15,7 @@
 import { buildIndex, MARK_NAMES, type Doc, type MarkName, type PositionIndex } from '@weft/crdt';
 import type { Node as PMNode } from 'prosemirror-model';
 import { TextSelection, type EditorState, type Transaction } from 'prosemirror-state';
-import { blockNode, blockOf, inlineNodesOf } from './normalize.ts';
+import { blockOf, inlineNodesOf } from './normalize.ts';
 import { anchorFromVisible, pmPosToVisible, unitsOfCodePoints, visibleFromAnchor, visibleToPmPos } from './positions.ts';
 import { inlineEntries, isPlainText, sameAttrs, sameBlock, sameInlineShape, blocksOfItems, blocksOfPm, diffText, type ActiveMark, type Block, type InlineTok } from './tokens.ts';
 import { schema } from './schema.ts';
@@ -37,7 +37,7 @@ export function mirrorOf(doc: Doc): Mirror {
 function carrySelection(state: EditorState, before: PositionIndex, after: PositionIndex, tr: Transaction): void {
   if (!(state.selection instanceof TextSelection)) return;
   const carry = (pos: number): number => visibleToPmPos(tr.doc, visibleFromAnchor(after, anchorFromVisible(before, pmPosToVisible(state.doc, pos))));
-  tr.setSelection(TextSelection.create(tr.doc, carry(state.selection.anchor), carry(state.selection.head)));
+  tr.setSelection(TextSelection.between(tr.doc.resolve(carry(state.selection.anchor)), tr.doc.resolve(carry(state.selection.head))));
 }
 
 /**
@@ -73,6 +73,14 @@ function replaceBlocks(tr: Transaction, before: readonly Block[], after: readonl
     const is = after[b] as Block;
     const start = starts[b] as number;
     const contentEnd = start + doc.child(b).content.size;
+    const target = blockOf(is);
+    // A divider is a leaf: it has no content position for an inline replace. Undo/redo,
+    // history replay and remote changes can cross that boundary with the same block count.
+    // Replace the complete normalized node so no intermediate invalid divider holds text.
+    if (doc.child(b).isLeaf || target.isLeaf) {
+      tr.replaceWith(boundary(b), boundary(b + 1), target);
+      continue;
+    }
     if (sameInlineShape(was.inlines, is.inlines)) {
       // Same char/break sequence, only marks differ: emit addMark/removeMark over the changed ranges (E53),
       // which keeps the cursor put and is exactly what a remote `fmt` means.
@@ -88,8 +96,7 @@ function replaceBlocks(tr: Transaction, before: readonly Block[], after: readonl
       tr.replaceWith(start, contentEnd, inlineNodesOf(is.inlines));
     }
     if (!sameAttrs(was.attrs, is.attrs)) {
-      const node = blockNode(is.attrs, '');
-      tr.setNodeMarkup(start - 1, node.type, node.attrs);
+      tr.setNodeMarkup(start - 1, target.type, target.attrs);
     }
   }
 }
@@ -161,7 +168,7 @@ export function correction(state: EditorState, mirror: Mirror): Transaction {
   replaceBlocks(tr, blocksOfPm(state.doc), blocksOfItems(mirror.index.items()));
   if (tr.docChanged && state.selection instanceof TextSelection) {
     const carry = (pos: number): number => visibleToPmPos(tr.doc, Math.min(mirror.index.length, pmPosToVisible(state.doc, pos)));
-    tr.setSelection(TextSelection.create(tr.doc, carry(state.selection.anchor), carry(state.selection.head)));
+    tr.setSelection(TextSelection.between(tr.doc.resolve(carry(state.selection.anchor)), tr.doc.resolve(carry(state.selection.head))));
   }
   return tr;
 }

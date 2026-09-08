@@ -134,6 +134,15 @@ function stepToOps(doc: Doc, index: PositionIndex, me: ReplicaId, nextSeq: numbe
   if (step instanceof AddMarkStep || step instanceof RemoveMarkStep) return { ...markStepToOps(doc, index, me, nextSeq, before, step), trailingKept: false };
   const range = stepRange(step);
   if (range === null) return { ops: [], doc, index, trailingKept: false };
+  // A block inserted after the last paragraph makes its formerly implicit ROOT boundary
+  // explicit. A structural step starts *after* that paragraph's closing token, so include
+  // the preceding boundary on both sides. The ordinary inline keystroke path stays narrow.
+  const beforeStart = before.resolve(range.lo);
+  const afterStart = after.resolve(range.newLo);
+  if ((beforeStart.depth === 0 && beforeStart.index(0) > 0) || (afterStart.depth === 0 && afterStart.index(0) > 0)) {
+    range.lo = Math.max(0, range.lo - 1);
+    range.newLo = Math.max(0, range.newLo - 1);
+  }
   const beforeTokens = tokensInRange(before, range.lo, range.hi);
   const afterTokens = tokensInRange(after, range.newLo, range.newHi);
   const d = diffTokens(beforeTokens, afterTokens);

@@ -1,5 +1,21 @@
 # Deploying Weft
 
+## Current existing app — 2026-09-08
+
+Routine releases target **`weft-abheet`** in `sin`; do not run first-install app/database/volume creation again. From this repository, after passing `npm run check` and `npm run docs:check`:
+
+```powershell
+fly deploy --app weft-abheet --remote-only --depot=false
+fly status --app weft-abheet
+fly checks list --app weft-abheet
+fly logs --app weft-abheet --no-tail
+```
+
+The commands below this section describe bootstrap/self-hosting. GitHub release automation waits for successful CI on main and uses its exact `head_sha`; it does not deploy every unvalidated push. The pre-commit hook runs lint/typecheck; the full suite is a separate local/CI gate. See [current verification](VERIFICATION.md) for executed scope.
+
+For rollback, record the previous image reference before releasing and use `fly deploy --app weft-abheet --image <previous-image-reference>` if needed. Image rollback does not roll back persistent data/migrations. That recovery command was documented, not exercised. `fly secrets list` reveals names only; it cannot retrieve secret values.
+
+
 Weft ships as **one container**: the static client and the relay behind a single [Caddy](https://caddyserver.com)
 edge on one port. The relay binds only `127.0.0.1:4200` (a hard invariant of its type); Caddy is the
 only thing on a public interface and reverse-proxies the WebSocket path `/ws` to that loopback relay.
@@ -74,8 +90,8 @@ Open the printed `https://<app>.fly.dev`, and repeat the two-tab convergence che
 
 ### Enable automatic deploys from CI
 
-`.github/workflows/release.yml` builds and pushes the image to `ghcr.io/abheet19/weft` on every push
-to `main`, then deploys to Fly **only if** a `FLY_API_TOKEN` secret exists (until then the deploy job
+`.github/workflows/release.yml` builds and pushes the image to `ghcr.io/abheet19/weft` after successful CI
+on `main`, then deploys to Fly **only if** a `FLY_API_TOKEN` secret exists (until then the deploy job
 is skipped cleanly — the image still publishes). To turn it on:
 
 ```sh

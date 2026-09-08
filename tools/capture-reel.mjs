@@ -121,8 +121,12 @@ async function writeDocument(page) {
   await applyMark(page, 'permanent identity', 'Control+b');
   await applyMark(page, 'nothing is ever lost', 'Control+Shift+h');
 
-  // Collapse selection to the top so no stray selection highlight shows at the end.
-  await editor.click();
+  // Collapse selection to the top so no stray selection highlight shows at the end. `force: true`:
+  // the highlight mark just applied can leave a transient popover/menu overlapping the editor's
+  // bounding box for a frame, which fails Playwright's strict visibility check even though the
+  // editor itself is exactly where we want to click.
+  await editor.click({ force: true });
+  await page.keyboard.press('Escape');
   await page.keyboard.press('Control+Home');
   await sleep(300);
 }

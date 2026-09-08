@@ -159,7 +159,30 @@ async function main() {
   say('Two windows. One document.', 'Both people typing at the same time — every edit shows up in both.');
   await hold(900);
   await typeTogether(' ship the CRDT core', ' and the offline op-log');
-  await hold(2200);
+  await hold(1400);
+
+  // ── Beat 1b · the persistent toolbar — a real format, visible in both windows ────────────────
+  // Select the phrase each window just typed and apply a mark via the SAME keyboard shortcuts the
+  // toolbar buttons run — the toolbar's own button lights up (aria-pressed) and the text changes
+  // style live, in both windows, proving the mark is a real CRDT op that syncs like any other.
+  say('The persistent toolbar — always there, never in the way.', 'Bold, highlight, headings, lists — every mark syncs like any other edit.');
+  await pages.a.getByText('ship the CRDT core').first().click({ clickCount: 3 });
+  await pages.a.keyboard.press('Control+b');
+  await pages.b.getByText('the offline op-log').first().click({ clickCount: 3 });
+  await pages.b.keyboard.press('Control+u');
+  await hold(1400);
+  await pages.a.keyboard.press('End');
+  await pages.b.keyboard.press('End');
+  await hold(400);
+
+  // A short bulleted list, typed live, so the block-type toolbar is visible in motion too.
+  await caretAtEndOf(pages.a, 'Ana:');
+  await pages.a.keyboard.press('Enter');
+  await pages.a.keyboard.press('Control+Shift+8'); // bullet list
+  await pages.a.keyboard.type('offline-first', { delay: 10 });
+  await pages.a.keyboard.press('Enter');
+  await pages.a.keyboard.type('no lost edits', { delay: 10 });
+  await hold(1800);
 
   // ── Beat 2 · one window goes offline, both keep typing ───────────────────────────────────────
   await ctxB.setOffline(true);

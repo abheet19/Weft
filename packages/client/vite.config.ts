@@ -9,4 +9,24 @@ export default defineConfig({
   appType: 'spa',
   server: { host: '127.0.0.1', port: 5173, strictPort: true },
   preview: { host: '127.0.0.1' },
+  build: {
+    rollupOptions: {
+      output: {
+        // Keep the editor engine and React in cacheable vendor files.  Document
+        // code can then update without making a returning user re-download the
+        // entire editor runtime.
+        manualChunks: {
+          react: ['react', 'react-dom'],
+          prosemirror: [
+            'prosemirror-commands',
+            'prosemirror-keymap',
+            'prosemirror-model',
+            'prosemirror-state',
+            'prosemirror-transform',
+            'prosemirror-view',
+          ],
+        },
+      },
+    },
+  },
 });

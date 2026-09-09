@@ -19,6 +19,10 @@
 		X-Frame-Options "DENY"
 		X-Content-Type-Options "nosniff"
 	}
+	# Vite fingerprints files below /assets. They are safe to cache for a year; index.html remains
+	# revalidated so a deployment can point browsers at a new fingerprint immediately.
+	@immutable path /assets/*
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
 
 	# Fly polls this endpoint. The entrypoint treats Caddy and the relay as one process unit: if the
 	# relay exits it stops Caddy, so this response disappears and the machine is restarted.

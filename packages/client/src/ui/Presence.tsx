@@ -73,11 +73,15 @@ export function Presence({ self, peers, connected, follow, onFollow }: PresenceP
   const shown: readonly PeerAvatar[] = view.kind === 'peers' ? view.peers.slice(0, MAX_AVATARS) : [];
   const overflow = view.kind === 'peers' ? view.peers.length - shown.length : 0;
   const label = view.kind === 'alone' ? 'Only you' : view.kind === 'unknown' ? 'Peers unknown' : '';
+  // The top-bar avatars use visible initials. Include each visible string in the button name so
+  // voice-control and screen-reader users identify the same target as a sighted user.
+  const avatarText = [initials(self.name), ...shown.map((peer) => initials(peer.name)), ...(overflow > 0 ? [`+${overflow}`] : [])].join(', ');
+  const buttonLabel = `${avatarText}. ${view.kind === 'peers' ? `Who is here: you and ${view.peers.length} more` : label}`;
 
   return (
     <div className="pres-wrap">
-      <button type="button" className="gbtn pres" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen((was) => !was)} aria-label={view.kind === 'peers' ? `Who is here: you and ${view.peers.length} more` : label}>
-        <span className="stack" data-testid="presence-stack">
+      <button type="button" className="gbtn pres" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen((was) => !was)} aria-label={buttonLabel}>
+        <span className="stack" data-testid="presence-stack" aria-hidden="true">
           <Avatar name={self.name} color={self.color} />
           {view.kind === 'unknown' && <Avatar ghost />}
           {shown.map((p) => (

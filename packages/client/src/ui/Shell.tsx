@@ -231,11 +231,9 @@ export function Shell({ url, docId }: ShellProps): React.JSX.Element {
           {notices.map((notice) => (
             <Notice key={notice.id} notice={notice} onDismiss={() => dismiss(notice.id)} />
           ))}
-          {/* `display: contents` (shell.css) — this div does not participate in layout itself; the
-              portaled .toolbar becomes, visually and for sizing, a direct child of .col, matching the
-              width/centering rule .toolbar already shares with .page (03-UI: the toolbar is a bar above
-              the document, not content inside it). */}
-          <div className="toolbar-host" ref={setToolbarSlot} />
+          {/* This sticky slot reserves the toolbar's measured footprint while IndexedDB opens. The
+              portaled controls replace that reserved surface without moving the document below it. */}
+          <div className={`toolbar-host${ready === null ? ' toolbar-loading glass' : ''}`} ref={setToolbarSlot} />
           <Page mode={mode} card={failure === null ? null : errorCard(failure)} onRetry={retry} onStartFresh={startFresh}>
             {ready !== null && scrubbing ? (
               <HistoryDoc base={ready.session.runner.history().base} ops={ready.session.runner.history().ops} position={historyPos ?? historyLength} showAuthors={showAuthors} />

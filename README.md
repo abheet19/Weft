@@ -59,7 +59,7 @@ offline-first, conflict-free, and honest about exactly where your work is.
 <div align="center"><sub>The persistent formatting toolbar · a live document with headings, lists and marks · the <b>Outline</b> rail · the time-travel <b>History</b> slider · the honest <code>● Saved</code> pill. A current local production-build capture — reproduce it with <code>node tools/capture-hero.mjs</code>.</sub></div>
 
 > [!TIP]
-> **Current source verification (9 September 2026):** [executed workflows and limits](docs/VERIFICATION.md) · [setup/deploy operations](docs/DEPLOY.md). Link creation and editing reject non-HTTP(S)/mailto URLs before an operation enters the CRDT, so an invalid local action cannot leave a peer waiting forever. The release gate now also covers a 320 px editor workflow, and Fly has a bounded health probe for the supervised edge/relay process unit.
+> **Current source verification (9 September 2026):** [executed workflows and limits](docs/VERIFICATION.md) · [setup/deploy operations](docs/DEPLOY.md). Link creation and editing reject non-HTTP(S)/mailto URLs before an operation enters the CRDT, so an invalid local action cannot leave a peer waiting forever. The release gate now also covers a 320 px editor workflow, and Fly has a bounded health probe for the supervised edge/relay process unit. A bounded mobile Lighthouse run against the local production build's stable document route measured 98 performance, 100 accessibility, 100 SEO, and 0.012 CLS.
 >
 > The two README PNG stills were refreshed from the current real **local production build** and isolated data. Existing GIFs are earlier recordings, retained for the longer walkthrough; they were not re-recorded in this pass.
 

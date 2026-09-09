@@ -10,6 +10,8 @@ A release can lag the source checkout. The Study Pack's release ledger records t
 
 **Independent exploration:** 25 desktop scenarios passed with zero page errors at `2026-09-09T16:43:57.345Z`; a separate phone audit passed 6 checks at 320 and 390 px with zero page errors at `2026-09-09T17:01:11.914Z`. Source scripts, screenshots, and raw JSON remain in the local verification workspace; those files are evidence, not part of the product bundle.
 
+**Bounded Lighthouse check:** Chrome's mobile profile against a stable `/d/<id>` on the local production build measured 98 performance, 100 accessibility, 100 SEO, 2.0 s FCP/LCP, 0 ms TBT, and 0.012 CLS. The stable toolbar slot removes the loading-to-editor page jump; readable helper/status text uses the existing secondary-text token; fonts no longer block first paint. This is one synthetic run on this machine, not a field-data or device-fleet claim.
+
 ## How to read the evidence
 
 The release checks below executed against local production builds and disposable fixtures. The independent browser checks used new Playwright contexts and observed rendered state after each action; they are scripted exploratory checks, not human hand-clicking. A passing local fixture, HTTP health response, and live-provider evaluation are different claims.

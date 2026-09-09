@@ -62,11 +62,10 @@ h1, h2, h3, p { margin: 0 }
   max-width: 1440px; margin: 0 auto; padding: 24px 24px 128px; transition: grid-template-columns var(--t-slow) var(--ease) }
 .shell.rail-closed { grid-template-columns: minmax(0,1fr) 0; gap: 0 }
 .col { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 16px }
-/* The persistent toolbar's portal target (S6, Editor.tsx): `display: contents` removes this element
-   from the box tree entirely, so its portaled `.toolbar` child is sized and centered as if it were a
-   direct child of `.col` — exactly like `.page`, which shares its width/max-width/centering rule. This
-   is what keeps the toolbar a bar ABOVE the document instead of content floating inside the paper card. */
-.toolbar-host { display: contents }
+/* The portal target is the sticky surface and reserves the real toolbar's height before the editor
+   has opened. This keeps the page stable across the asynchronous IndexedDB/session hand-off. */
+.toolbar-host { position: sticky; top: calc(12px + var(--top-h)); z-index: 16; width: 100%; max-width: calc(68ch + 128px); min-height: 86px }
+.toolbar-loading { pointer-events: none }
 @media (max-width: 1000px) { .shell { grid-template-columns: minmax(0,1fr) } }
 
 /* ---------- 9. INLINE NOTICE STRIP — opaque, above the editor, not a toast (§4.7) ---------- */
@@ -219,7 +218,7 @@ h1, h2, h3, p { margin: 0 }
 .rail input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--ink); border: 2px solid var(--paper) }
 .hist-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11.5px; color: var(--ink-3) }
 .chk { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; color: var(--ink-2) }
-.hint { margin-top: 8px; font-size: 11px; line-height: 1.5; color: var(--ink-3) }
+.hint { margin-top: 8px; font-size: 11px; line-height: 1.5; color: var(--ink-2) }
 .hint code { font-family: var(--font-mono); font-size: 10.5px }
 /* The historical document is read-only and slightly dimmed so it never looks live (prototype §10, .page.tt .doc). */
 .doc.history { color: var(--ink-2); caret-color: transparent }
@@ -253,7 +252,7 @@ kbd { font: 500 11px/1 var(--font-mono); padding: 3px 5px; border-radius: 5px; b
 .skel i:nth-child(1) { width: 78% } .skel i:nth-child(2) { width: 94% } .skel i:nth-child(3) { width: 58% }
 @keyframes shimmer { to { background-position: -200% 0 } }
 /* .ghost: positioned over the first line of the (kept) document — the page's own padding — and transparent to the pointer, so a click lands in the editor. */
-.ghost { color: var(--ink-3); font-style: italic; position: absolute; top: 56px; left: 64px; right: 64px; line-height: 1.6; pointer-events: none }
+.ghost { color: var(--ink-2); font-style: italic; position: absolute; top: 56px; left: 64px; right: 64px; line-height: 1.6; pointer-events: none }
 .err { padding: 16px; font-family: var(--font-ui); font-size: var(--fs-0); background: var(--raised); border: 1px solid color-mix(in oklch, var(--bad) 40%, var(--line)); border-radius: var(--r-2) }
 .err-h { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--ink); margin-bottom: 6px } .err-h .i { color: var(--bad) }
 .err p { color: var(--ink-2) } .err code { font-family: var(--font-mono); font-size: 12px }
@@ -263,7 +262,7 @@ kbd { font: 500 11px/1 var(--font-mono); padding: 3px 5px; border-radius: 5px; b
 /* ---------- 18. PERSISTENT TOOLBAR (S6, §4.4) — replaces the floating format bar as the primary surface ---------- */
 /* Ported from the redesign prototype's .toolbar. It is a glass panel but must let its dropdowns escape,
    so overflow is visible (the .glass seam is a 1px top line, unaffected). It aligns with the page width. */
-.toolbar { position: sticky; top: calc(12px + var(--top-h)); z-index: 16; width: 100%; max-width: calc(68ch + 128px);
+.toolbar { position: relative; width: 100%;
   display: flex; align-items: center; gap: 3px; padding: 7px 9px; flex-wrap: wrap; row-gap: 6px; overflow: visible; font-family: var(--font-ui) }
 .tgrp { display: inline-flex; align-items: center; gap: 2px; position: relative }
 .tb-sep { width: 1px; height: 22px; background: var(--gl-edge); margin: 0 6px; flex: none }
@@ -301,7 +300,7 @@ kbd { font: 500 11px/1 var(--font-mono); padding: 3px 5px; border-radius: 5px; b
 .linkpop button { width: 30px; height: 30px; display: grid; place-items: center; color: var(--ink-2); border-radius: var(--r-1); background: var(--gl-inner) }
 .linkpop button:hover { background: color-mix(in oklch, var(--gl-inner), var(--ink) 9%); color: var(--ink) }
 .linkpop .copied { color: var(--ok) }
-.pagefoot { display: flex; gap: 12px; margin-top: 16px; color: var(--ink-3); font-size: 12px; font-family: var(--font-ui) }
+.pagefoot { display: flex; gap: 12px; margin-top: 16px; color: var(--ink-2); font-size: 12px; font-family: var(--font-ui) }
 
 /* ---------- 20. RIGHT SIDEBAR (S6, §4.5) — Outline / People / Sync tabs, replacing the Sync Inspector ---------- */
 /* The rail is now one glass panel with tabs; overrides the §13 flex-of-panels rail. Children scroll. */
@@ -313,8 +312,8 @@ kbd { font: 500 11px/1 var(--font-mono); padding: 3px 5px; border-radius: 5px; b
 .railtab.on { background: color-mix(in oklch, var(--accent) 16%, transparent); color: var(--accent) }
 .railtab:hover:not(.on) { background: color-mix(in oklch, var(--gl-inner), var(--ink) 9%); color: var(--ink) }
 .railbody { padding: 14px 15px 16px; overflow-y: auto; min-height: 0 }
-.railhead { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 10px }
-.rail-empty { color: var(--ink-3); font-size: 13px; line-height: 1.5 }
+.railhead { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 10px }
+.rail-empty { color: var(--ink-2); font-size: 13px; line-height: 1.5 }
 /* outline */
 .ol { display: flex; flex-direction: column; gap: 1px }
 .ol-a { display: block; width: 100%; text-align: left; padding: 6px 10px; border-radius: var(--r-1); color: var(--ink-2); font-size: 13.5px; line-height: 1.35;
@@ -386,8 +385,10 @@ kbd { font: 500 11px/1 var(--font-mono); padding: 3px 5px; border-radius: 5px; b
   .shell { gap: 16px; padding: 16px 8px 72px }
   .page { min-height: 72dvh; padding: 40px 24px 80px }
   .ghost { top: 40px; left: 24px; right: 24px }
-  .toolbar { top: calc(8px + var(--top-h) + 8px); padding: 6px; gap: 2px; row-gap: 4px }
+  .toolbar-host { top: calc(8px + var(--top-h) + 8px); min-height: 118px }
+  .toolbar { padding: 6px; gap: 2px; row-gap: 4px }
   .tb-sep { margin: 0 3px }
   .rail { position: static; top: auto; max-height: none }
   .pop-pres { left: auto; right: 0; width: min(312px, calc(100vw - 16px)) }
 }
+@media (max-width: 340px) { .toolbar-host { min-height: 154px } }

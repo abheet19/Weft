@@ -465,7 +465,7 @@ All merge logic runs in the client's `crdt` package. It is a pure function of (t
 with ids and the "who typed what" supplied by the caller. That is what makes it:
 
 - **property-testable**: generate random op sequences, apply in random orders, compare hashes;
-- **replayable**: the demo's time-travel slider is `fold(apply, empty, ops.slice(0, n))`;
+- **replayable**: the demo's time-travel slider is `fold(apply, openedDocument, sessionOps.slice(0, n))`; position 0 is the state this tab opened, because compaction means v1 does not retain a complete cross-session log;
 - **portable**: the same package runs in the browser and in a Node test with no shim.
 
 ### 5.3 The ProseMirror binding (the genuinely hard part)
@@ -534,7 +534,7 @@ vectors and content hash per replica, drawn from real data). The impressive mome
 | 0:40 | In B, bold a word A is also editing and delete a word A just typed. | B is live; A is still dark and unaware. |
 | 0:55 | Flip A back online. | Ops flow both ways in the Inspector. Both documents **snap to the same text**, sentences intact and not interleaved. Both hashes turn green **because the server's `converged` message carried matching hashes**, not because a timer fired. |
 | 1:10 | Kill A's tab mid-word while offline (repeat the flip, type, close the tab). Reopen the URL. | The half-typed word is there. Pill: "Offline · 7 changes on this device". Go online: it syncs. |
-| 1:25 | Drag the **time-travel** slider back 40 ops and forward. | The document replays; the audience sees the op log *is* the document. |
+| 1:25 | Drag the **time-travel** slider back 40 ops and forward. | The document replays operations applied since this tab opened, over the state it opened with. |
 
 Optional 10-second coda for a technical audience: run the property test in a terminal
 (`npm test -w @weft/crdt -- --reporter verbose`) and read the invariant names.

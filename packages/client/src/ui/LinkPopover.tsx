@@ -9,6 +9,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import type { EditorState } from 'prosemirror-state';
 import type { EditorView } from 'prosemirror-view';
+import { isSafeHref } from '@weft/protocol';
 import { safeHref, schema } from '../binding/schema.ts';
 import { activeFormat } from './format.ts';
 import { Icon } from './Icons.tsx';
@@ -46,6 +47,7 @@ export function LinkPopover({ view, state }: LinkPopoverProps): React.JSX.Elemen
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
   const [href, setHref] = useState('');
+  const [hrefError, setHrefError] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const af = activeFormat(state);
   const range = af.link ? linkRange(state) : null;
@@ -72,6 +74,7 @@ export function LinkPopover({ view, state }: LinkPopoverProps): React.JSX.Elemen
   useLayoutEffect(() => {
     if (editing) {
       setHref(urlRef.current);
+      setHrefError(false);
       input.current?.focus();
     }
   }, [editing]);
@@ -91,6 +94,11 @@ export function LinkPopover({ view, state }: LinkPopoverProps): React.JSX.Elemen
     view.focus();
   };
   const saveEdit = (): void => {
+    if (href !== '' && !isSafeHref(href)) {
+      setHrefError(true);
+      input.current?.focus();
+      return;
+    }
     if (href !== '') view.dispatch(view.state.tr.addMark(range.from, range.to, schema.marks.link!.create({ href })));
     setEditing(false);
     view.focus();
@@ -99,24 +107,36 @@ export function LinkPopover({ view, state }: LinkPopoverProps): React.JSX.Elemen
   return (
     <div className="linkpop glass" role="dialog" aria-label="Link" ref={ref}>
       {editing ? (
-        <input
-          ref={input}
-          className="tb-linkinput"
-          type="url"
-          aria-label="Edit link URL"
-          value={href}
-          onChange={(e) => setHref(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              saveEdit();
-            } else if (e.key === 'Escape') {
-              e.preventDefault();
-              setEditing(false);
-              view.focus();
-            }
-          }}
-        />
+        <>
+          <input
+            ref={input}
+            className="tb-linkinput"
+            type="url"
+            aria-label="Edit link URL"
+            aria-invalid={hrefError}
+            aria-describedby={hrefError ? 'link-popover-error' : undefined}
+            value={href}
+            onChange={(e) => {
+              setHref(e.target.value);
+              setHrefError(false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                saveEdit();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                setEditing(false);
+                view.focus();
+              }
+            }}
+          />
+          {hrefError && (
+            <span className="tb-linkerror linkpop-error" id="link-popover-error" role="alert">
+              Use an http, https, or mailto URL.
+            </span>
+          )}
+        </>
       ) : (
         <>
           <span className="url mono" title={url}>

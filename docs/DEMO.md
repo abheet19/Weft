@@ -2,8 +2,8 @@
 
 The impressive moment is **convergence, not typing**: two windows, partitioned offline, then
 reconciled with both sentences intact and the Sync Inspector's per-replica hashes turning green
-because the server said so — not because a timer fired. Then time-travel, to show the op log *is* the
-document. This is the script from [01-DESIGN.md §7](01-DESIGN.md#7-the-demo-90-seconds), rehearsable
+because the server said so — not because a timer fired. Then time-travel, to show the current session's
+operations replayed over the document as opened. This is the script from [01-DESIGN.md §7](01-DESIGN.md#7-the-demo-90-seconds), rehearsable
 as written.
 
 ## Setup (before the clock starts)
@@ -32,7 +32,7 @@ Both pills read **`● Saved`**. Both Inspectors show two lanes, hashes matching
 | 0:40 | In **B** (still live), bold a word A is also editing and delete a word A just typed. | B keeps working; A is dark and unaware. This is the concurrent-edit conflict that kills naive editors. |
 | 0:55 | In **A**, turn **Simulate offline** back off. | **The moment.** Ops flow both ways in the Inspector; both documents **snap to the same text**, the two sentences intact and *not interleaved*. Both hashes turn **green because the server's `converged`/`quiet` message carried matching hashes**, not because a timer fired. A's inline strip reads *"Back online — N offline edits merged."* |
 | 1:10 | While offline again, kill **A**'s tab mid-word (⌘K → Simulate offline, type, close the tab). Reopen the URL. | The half-typed word is still there — it was committed to this device before the tab died. Pill: `● Offline · N changes on this device`. Turn Simulate offline off: it syncs. |
-| 1:25 | In the rail's **History** panel, drag the time-travel slider back, then forward. | The document replays operation by operation; the audience sees the op log *is* the document. `Show authors` tints each person's characters in their own hue. |
+| 1:25 | In the rail's **History** panel, drag the time-travel slider back, then forward. | The document replays operations applied since this tab opened over its opening state. `Show authors` tints each person's characters in their own hue. Reloading starts a new session; durable cross-session versions are outside v1. |
 
 ## The technical coda (optional, +10 s)
 

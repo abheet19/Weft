@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Command, EditorState } from 'prosemirror-state';
 import type { EditorView } from 'prosemirror-view';
+import { isSafeHref } from '@weft/protocol';
 import { schema } from '../binding/schema.ts';
 import { linkAcrossSelection } from '../binding/shortcuts.ts';
 import { activeFormat, BLOCK_CHOICES, setBlock, setColor, toggleMarkByName, TOGGLE_MARKS, type ActiveFormat } from './format.ts';
@@ -66,6 +67,7 @@ export function Toolbar({ view, state, linkOpen, setLinkOpen, undo, redo }: Tool
   const af = activeFormat(state);
   const [menu, setMenu] = useState<Menu>(null);
   const [href, setHref] = useState('');
+  const [hrefError, setHrefError] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
 
@@ -83,6 +85,7 @@ export function Toolbar({ view, state, linkOpen, setLinkOpen, undo, redo }: Tool
   useEffect(() => {
     if (linkOpen) {
       setHref(hrefRef.current ?? '');
+      setHrefError(false);
       input.current?.focus();
     }
   }, [linkOpen]);
@@ -103,6 +106,11 @@ export function Toolbar({ view, state, linkOpen, setLinkOpen, undo, redo }: Tool
   const applyLink = (): void => {
     const type = schema.marks.link!;
     const { from, to } = view.state.selection;
+    if (href !== '' && !isSafeHref(href)) {
+      setHrefError(true);
+      input.current?.focus();
+      return;
+    }
     if (href !== '' && from !== to) view.dispatch(view.state.tr.addMark(from, to, type.create({ href })));
     setLinkOpen(false);
     view.focus();
@@ -191,9 +199,14 @@ export function Toolbar({ view, state, linkOpen, setLinkOpen, undo, redo }: Tool
               type="url"
               placeholder="https://…"
               aria-label="Link URL"
+              aria-invalid={hrefError}
+              aria-describedby={hrefError ? 'toolbar-link-error' : undefined}
               value={href}
               onMouseDown={(e) => e.stopPropagation()}
-              onChange={(e) => setHref(e.target.value)}
+              onChange={(e) => {
+                setHref(e.target.value);
+                setHrefError(false);
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
@@ -205,6 +218,11 @@ export function Toolbar({ view, state, linkOpen, setLinkOpen, undo, redo }: Tool
                 }
               }}
             />
+          )}
+          {linkOpen && hrefError && (
+            <span className="tb-linkerror" id="toolbar-link-error" role="alert">
+              Use an http, https, or mailto URL.
+            </span>
           )}
         </div>
       </div>

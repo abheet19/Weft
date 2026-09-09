@@ -1,6 +1,6 @@
 // HistoryDoc.tsx — the paper while time-travelling: a READ-ONLY rendering of the document at a
 // slider position (03-UI §4.6). It replaces the live editor whenever the History slider is off the
-// end, so the user can scrub through `fold(apply, ∅, ops[0..n])` without editing the past — editing
+// end, so the user can scrub through `fold(apply, openedDocument, sessionOps[0..n])` without editing the past — editing
 // resumes the instant the slider returns to the end, when the shell mounts the live Editor again.
 // The optional "Show authors" overlay tints each character in its author replica's hue (the same
 // palette the presence carets use), so the audience can see who wrote what across the whole history.

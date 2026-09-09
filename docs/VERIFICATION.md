@@ -4,11 +4,11 @@ Offline collaborative writing: contributors edit the same document during a conn
 
 The exact deployed commit and live smoke results are recorded in the Study Pack's `08_TESTING_ARTIFACT.md` release ledger.
 
-**Configured release check:** `npm run check` passed again on Windows on 2026-09-09. It ran 612 distinct Vitest cases (309 client + 4 latency + 164 CRDT + 52 protocol + 83 server), plus 26 Playwright cases across 10 spec files. The CRDT cases run twice, with and without coverage; those repeated executions are not extra distinct tests. `npm run docs:check` separately passed all 12 documents.
+**Configured release check:** `npm run check` passed again on Windows on 2026-09-09. It ran 612 distinct Vitest cases (309 client + 4 latency + 164 CRDT + 52 protocol + 83 server), plus 27 Playwright cases across 10 spec files. The CRDT cases run twice, with and without coverage; those repeated executions are not extra distinct tests. `npm run docs:check` separately passed all 12 documents.
 
-**Changes verified:** Divider insertion at the end of a paragraph now preserves its missing explicit boundary. Conversions to/from divider atoms replace a whole node safely. Undo/redo retains color values and checklist checked state. The Caddy edge now sends framing and MIME-sniffing protections.
+**Changes verified:** Divider insertion at the end of a paragraph now preserves its missing explicit boundary. Conversions to/from divider atoms replace a whole node safely. Undo/redo retains color values and checklist checked state. Link creation and editing reject a protocol-invalid URL before dispatch, so a rejected local operation cannot block sync. The Caddy edge now sends framing and MIME-sniffing protections.
 
-**Independent exploration:** 25 passed scenarios, zero page errors, freshly repeated at `2026-09-08T22:27:43.412Z` (2026-09-09 in Asia/Calcutta). Source script and raw result files are in the local workspace under `job-search-context/project-verification-2026-09-08/Weft/`; that directory name records when the harness was created, while `exploration.json.date` records this run.
+**Independent exploration:** The earlier harness reported 25 passed scenarios and zero page errors at `2026-09-08T22:27:43.412Z` (2026-09-09 in Asia/Calcutta), but a fresh live two-client audit later that day exposed scenario 22 as a false pass. Source script and raw result files are in the local workspace under `job-search-context/project-verification-2026-09-08/Weft/`; that directory name records when the harness was created, while `exploration.json.date` records that run.
 
 ## How to read the evidence
 
@@ -43,7 +43,7 @@ Run the existing suite first, then the independent browser sequence below agains
 | 19 | Highlight colour | PASS — {"options": ["", "", "", "", "", "", "None"], "undoRedo": "exact formatting restored"} |
 | 20 | divider and undo/redo buttons | PASS — divider removal/reappearance observed |
 | 21 | link create, copy, edit, remove | PASS — all link actions completed |
-| 22 | invalid link is rejected without breaking sync | PASS — `javascript:` input created no link; the document stayed editable and reached Saved |
+| 22 | invalid link is rejected without breaking sync | A live audit of `948efe6` exposed a false pass: `javascript:` rendered locally as an inert `#` link while its rejected op left that client at `Syncing · 1`. The fix rejects it before dispatch, leaves the input open with an error, keeps both peers Saved, and permits following valid links to sync; a two-client Chromium regression covers both create and edit paths. |
 | 23 | history scrub, authors overlay and return to live | PASS — {"max": "7"} |
 | 24 | sidebar tabs and command palette theme/opacity/offline | PASS — all three rail tabs, rail hide/show, theme, transparency, simulated offline, time-travel, author overlay, diagnostics and state-vector actions were inventoried or exercised |
 | 25 | bounded local browser concurrency: 6 independent clients, 10 edit rounds | PASS — 60 insertions / 300 characters; all peers converged each round; p50 787 ms, p95 1,402 ms |

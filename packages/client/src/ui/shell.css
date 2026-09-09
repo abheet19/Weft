@@ -291,6 +291,9 @@ kbd { font: 500 11px/1 var(--font-mono); padding: 3px 5px; border-radius: 5px; b
 .tb-none:hover { background: var(--raised) }
 .tb-linkinput { position: absolute; z-index: 70; top: calc(100% + 6px); left: 0; height: 32px; width: 220px; padding: 0 10px; border-radius: var(--r-1);
   border: 1px solid var(--line); background: var(--paper); color: var(--ink); font-family: var(--font-ui); font-size: 13px; box-shadow: 0 20px 44px -20px oklch(0% 0 0 / .5) }
+.tb-linkinput[aria-invalid="true"] { border-color: var(--bad) }
+.tb-linkerror { position: absolute; z-index: 71; top: calc(100% + 42px); left: 0; width: 220px; padding: 5px 8px; border-radius: var(--r-1); background: var(--paper); color: var(--bad); box-shadow: var(--shadow-2); font-size: 11px }
+.linkpop-error { top: calc(100% + 6px) }
 
 /* ---------- 19. LINK POPOVER (S6, §4.4) — the ONE persistent floating element ---------- */
 .linkpop { position: absolute; z-index: 35; display: flex; align-items: center; gap: 2px; padding: 5px; border-radius: var(--r-2); overflow: visible; animation: rise var(--t-fast) var(--ease) }

@@ -1,9 +1,9 @@
 // s6.spec.ts — the redesign's editing surface (S6, 03-UI §4.4/§4.5) in a real browser: the persistent
 // toolbar applies every new mark and block and the DOM reflects it; the link popover copies / edits /
-// removes a link; the sidebar's tabs show the outline, the people, and the sync status. One browser
-// context (these are local editing gestures, not collaboration), against the real server + preview
-// build global-setup published. Each mark and block is exercised in its OWN fresh document so no
-// selection or trailing-block state leaks between cases. Every wait is on visible state.
+// removes a link; the sidebar's tabs show the outline, the people, and the sync status. Most cases use
+// one browser context for a local gesture; the unsafe-link regression uses two to prove rejection does
+// not poison later peer sync. All run against the real server + preview build global-setup published.
+// Each mark and block gets its OWN fresh document, and every wait is on visible state.
 
 import { expect, test, type Page } from '@playwright/test';
 import { editor, open, pill } from './helpers.ts';
@@ -105,6 +105,60 @@ test('S6 link popover: create a link, then Copy / Edit / Remove it', async ({ pa
   await page.getByRole('dialog', { name: 'Link' }).getByRole('button', { name: 'Remove link' }).click();
   await expect(editor(page).locator('a')).toHaveCount(0);
   await expect(editor(page)).toHaveText('anchor');
+});
+
+test('S6 unsafe links are rejected before dispatch and do not poison later peer sync', async ({ browser }) => {
+  const docId = freshId('unsafe-link');
+  const [a, b] = await Promise.all([browser.newContext(), browser.newContext()]);
+  const pageA = await a.newPage();
+  const pageB = await b.newPage();
+  await open(pageA, docId);
+  await open(pageB, docId);
+
+  await editor(pageA).click();
+  await pageA.keyboard.type('anchor');
+  await expect(pill(pageA)).toHaveText('Saved');
+  await expect(editor(pageB)).toHaveText('anchor');
+  await editor(pageA).press('Control+a');
+  await tb(pageA, 'Link (Ctrl+K)').click();
+  const urlInput = pageA.getByRole('textbox', { name: 'Link URL' });
+  await urlInput.fill('javascript:alert(1)');
+  await urlInput.press('Enter');
+
+  await expect(urlInput).toBeVisible();
+  await expect(urlInput).toHaveAttribute('aria-invalid', 'true');
+  await expect(pageA.getByRole('alert')).toHaveText('Use an http, https, or mailto URL.');
+  await expect(editor(pageA).locator('a')).toHaveCount(0);
+  await expect(editor(pageB).locator('a')).toHaveCount(0);
+  await expect(pill(pageA)).toHaveText('Saved');
+  await expect(pill(pageB)).toHaveText('Saved');
+
+  await urlInput.fill('https://example.org/safe');
+  await urlInput.press('Enter');
+  await expect(editor(pageA).locator('a[href="https://example.org/safe"]')).toHaveText('anchor');
+  await expect(editor(pageB).locator('a[href="https://example.org/safe"]')).toHaveText('anchor');
+  await expect(pill(pageA)).toHaveText('Saved');
+  await expect(pill(pageB)).toHaveText('Saved');
+
+  await editor(pageA).locator('a').click();
+  const popover = pageA.getByRole('dialog', { name: 'Link' });
+  await popover.getByRole('button', { name: 'Edit link' }).click();
+  const editInput = popover.getByRole('textbox', { name: 'Edit link URL' });
+  await editInput.fill('data:text/html,unsafe');
+  await editInput.press('Enter');
+  await expect(editInput).toBeVisible();
+  await expect(editInput).toHaveAttribute('aria-invalid', 'true');
+  await expect(editor(pageA).locator('a[href="https://example.org/safe"]')).toHaveText('anchor');
+  await expect(editor(pageB).locator('a[href="https://example.org/safe"]')).toHaveText('anchor');
+  await expect(pill(pageA)).toHaveText('Saved');
+
+  await editInput.fill('mailto:safe@example.org');
+  await editInput.press('Enter');
+  await expect(editor(pageA).locator('a[href="mailto:safe@example.org"]')).toHaveText('anchor');
+  await expect(editor(pageB).locator('a[href="mailto:safe@example.org"]')).toHaveText('anchor');
+  await expect(pill(pageA)).toHaveText('Saved');
+  await expect(pill(pageB)).toHaveText('Saved');
+  await Promise.all([a.close(), b.close()]);
 });
 
 test('S6 sidebar: Outline lists headings and jumps, People shows you, Sync shows the status', async ({ page }) => {

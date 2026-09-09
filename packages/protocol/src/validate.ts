@@ -129,14 +129,14 @@ function isStateVector(x: unknown): x is StateVector {
   return keys.every((k) => REPLICA_ID_RE.test(k) && isUint(x[k]));
 }
 
-/** A link's destination (E28): bounded, and only a scheme a browser may follow without running code. Checked here so a hostile `javascript:` never reaches a peer's store, let alone its renderer. */
-function isHref(x: unknown): x is string {
+/** A link's destination (E28): bounded, and only a scheme a browser may follow without running code. Exported so an editing client can reject the same value before it creates an op; the wire validator remains the final trust boundary. */
+export function isSafeHref(x: unknown): x is string {
   return typeof x === 'string' && x.length <= LIMITS.MAX_HREF && HREF_SCHEME_RE.test(x);
 }
 
 /** `href` travels only on a `link` mark; on any other mark it has no meaning and is refused rather than carried around. */
 function hrefFits(mark: unknown, href: unknown): boolean {
-  return href === undefined || (mark === 'link' && isHref(href));
+  return href === undefined || (mark === 'link' && isSafeHref(href));
 }
 
 /** A colour mark's value (E56): a bounded `#rrggbb`/`#rrggbbaa` hex, so no attacker-chosen string ever reaches a `style` attribute. `value` travels only on a colour mark. */

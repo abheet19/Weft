@@ -1,7 +1,7 @@
 // History.tsx — the History / time-travel side rail (03-UI §4.6), ported from the prototype's
 // `.panel` with the range slider and "Show authors" checkbox. It is a thin control: a slider over
 // this replica's op log with a numeric position, whose value the shell turns into a read-only replay
-// of `fold(apply, ∅, ops[0..n])`. Dragging off the end puts the page in read-only time-travel;
+// of `fold(apply, openedDocument, sessionOps[0..n])`. Dragging off the end puts the page in read-only time-travel;
 // returning to the end restores live editing (the shell swaps the live editor back). It reads the op
 // count from the runner snapshot and decides nothing about the document.
 
@@ -45,7 +45,7 @@ export function History({ length, position, onPosition, showAuthors, onShowAutho
         </label>
       </div>
       <p className="hint">
-        The page re-renders <code>fold(apply, ∅, ops[0..n])</code>. Named versions and restore are not in v1.
+        Replays operations from this session over the document as opened. Cross-session versions and restore are not in v1.
       </p>
     </section>
   );

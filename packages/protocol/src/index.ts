@@ -31,6 +31,6 @@ export type {
   ClientMessage,
   ServerMessage,
 } from './messages.ts';
-export { validateClientMessage, validateServerMessage, validateOp } from './validate.ts';
+export { isSafeHref, validateClientMessage, validateServerMessage, validateOp } from './validate.ts';
 export type { Valid } from './validate.ts';
 export { decodeClient, decodeServer, encode } from './codec.ts';

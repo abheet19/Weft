@@ -2,13 +2,13 @@
 
 Offline collaborative writing: contributors edit the same document during a connection loss, then merge their work and see where it is durably stored.
 
-The exact deployed commit and live smoke results are recorded in the Study Pack's `08_TESTING_ARTIFACT.md` release ledger.
+A release can lag the source checkout. The Study Pack's release ledger records the exact pushed SHA, Fly image, health check, and post-deploy browser evidence; this source companion records the reproducible checks without claiming that an uncommitted checkout is live.
 
-**Configured release check:** `npm run check` passed again on Windows on 2026-09-09. It ran 612 distinct Vitest cases (309 client + 4 latency + 164 CRDT + 52 protocol + 83 server), plus 27 Playwright cases across 10 spec files. The CRDT cases run twice, with and without coverage; those repeated executions are not extra distinct tests. `npm run docs:check` separately passed all 12 documents.
+**Configured release check:** `npm run check` passed again on Windows on 2026-09-09. It ran 612 distinct Vitest cases (309 client + 4 latency + 164 CRDT + 52 protocol + 83 server), plus 28 Playwright cases across 11 spec files. The CRDT cases run twice, with and without coverage; those repeated executions are not extra distinct tests. `npm run docs:check` separately passed all 12 documents.
 
-**Changes verified:** Divider insertion at the end of a paragraph now preserves its missing explicit boundary. Conversions to/from divider atoms replace a whole node safely. Undo/redo retains color values and checklist checked state. Link creation and editing reject a protocol-invalid URL before dispatch, so a rejected local operation cannot block sync. The Caddy edge now sends framing and MIME-sniffing protections.
+**Changes verified:** Divider insertion at the end of a paragraph preserves its missing explicit boundary. Conversions to/from divider atoms replace a whole node safely. Undo/redo retains color values and checklist checked state. Link creation and editing reject a protocol-invalid URL before dispatch, so a rejected local operation cannot block sync. At 320 and 390 px, the top-bar controls stay inside the viewport, editing/formatting/palette/sidebar flows remain usable, and the save pill clears the sidebar tabs. The Caddy edge sends framing and MIME-sniffing protections and exposes the supervised process-unit health probe.
 
-**Independent exploration:** The earlier harness reported 25 passed scenarios and zero page errors at `2026-09-08T22:27:43.412Z` (2026-09-09 in Asia/Calcutta), but a fresh live two-client audit later that day exposed scenario 22 as a false pass. Source script and raw result files are in the local workspace under `job-search-context/project-verification-2026-09-08/Weft/`; that directory name records when the harness was created, while `exploration.json.date` records that run.
+**Independent exploration:** 25 desktop scenarios passed with zero page errors at `2026-09-09T16:43:57.345Z`; a separate phone audit passed 6 checks at 320 and 390 px with zero page errors at `2026-09-09T17:01:11.914Z`. Source scripts, screenshots, and raw JSON remain in the local verification workspace; those files are evidence, not part of the product bundle.
 
 ## How to read the evidence
 

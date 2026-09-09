@@ -13,6 +13,8 @@ fly logs --app weft-abheet --no-tail
 
 The commands below this section describe bootstrap/self-hosting. GitHub release automation waits for successful CI on main and uses its exact `head_sha`; it does not deploy every unvalidated push. The pre-commit hook runs lint/typecheck; the full suite is a separate local/CI gate. See [current verification](VERIFICATION.md) for executed scope.
 
+`fly.toml` polls `GET /health` every 15 seconds with a 3-second timeout after a 20-second grace period. Caddy serves that probe, while `docker-entrypoint.sh` supervises the relay as part of the same process unit: if the relay exits, it stops Caddy and the probe fails so Fly can restart the machine. The probe does not detect a relay process that stays alive but stops making progress; the browser/WebSocket smoke remains the end-to-end check for that path.
+
 For rollback, record the previous image reference before releasing and use `fly deploy --app weft-abheet --image <previous-image-reference>` if needed. Image rollback does not roll back persistent data/migrations. That recovery command was documented, not exercised. `fly secrets list` reveals names only; it cannot retrieve secret values.
 
 

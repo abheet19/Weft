@@ -59,7 +59,7 @@ offline-first, conflict-free, and honest about exactly where your work is.
 <div align="center"><sub>The persistent formatting toolbar · a live document with headings, lists and marks · the <b>Outline</b> rail · the time-travel <b>History</b> slider · the honest <code>● Saved</code> pill. A current local production-build capture — reproduce it with <code>node tools/capture-hero.mjs</code>.</sub></div>
 
 > [!TIP]
-> **Current verification (9 September 2026):** [executed workflows and limits](docs/VERIFICATION.md) · [setup/deploy operations](docs/DEPLOY.md). Divider insertion at the end of a paragraph now preserves its missing explicit boundary. Conversions to/from divider atoms replace a whole node safely. Undo/redo retains color values and checklist checked state. The public edge now refuses framing and disables MIME sniffing.
+> **Current source verification (9 September 2026):** [executed workflows and limits](docs/VERIFICATION.md) · [setup/deploy operations](docs/DEPLOY.md). Link creation and editing reject non-HTTP(S)/mailto URLs before an operation enters the CRDT, so an invalid local action cannot leave a peer waiting forever. The release gate now also covers a 320 px editor workflow, and Fly has a bounded health probe for the supervised edge/relay process unit.
 >
 > The two README PNG stills were refreshed from the current real **local production build** and isolated data. Existing GIFs are earlier recordings, retained for the longer walkthrough; they were not re-recorded in this pass.
 
@@ -324,7 +324,7 @@ how each fix was tested — is in [docs/00-GATES.md](docs/00-GATES.md). CI runs 
 
 ## ∅ What it does not do yet
 
-Everything. And, by design, ever (see [01-DESIGN.md §6](docs/01-DESIGN.md#6-what-i-am-not-building)):
+The deliberate limits are listed in [01-DESIGN.md §6](docs/01-DESIGN.md#6-what-i-am-not-building):
 accounts or permissions · comments · images, tables, nested lists · Peritext-style formatting
 semantics (formatting is per-character last-writer-wins, and the design says why) · cross-replica
 (collaborative) undo — local-only undo *is* built · end-to-end encryption · horizontal server

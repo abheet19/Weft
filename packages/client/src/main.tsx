@@ -16,15 +16,17 @@ import './ui/shell.css';
 const WS_URL: string = import.meta.env.VITE_WEFT_WS ?? 'ws://127.0.0.1:4200';
 
 const match = /^\/d\/([^/]+)$/.exec(location.pathname);
-const docId = match?.[1];
+let docId = match?.[1];
 if (docId === undefined || !DOC_ID_RE.test(docId)) {
-  location.replace(`/d/${newDocId()}`);
-} else {
-  const root = document.getElementById('weft-app');
-  if (root === null) throw new Error('index.html has no #weft-app root');
-  createRoot(root).render(
-    <StrictMode>
-      <Shell url={WS_URL} docId={docId} />
-    </StrictMode>,
-  );
+  docId = newDocId();
+  // Keep the fresh-document URL without paying for a second document navigation on first load.
+  history.replaceState(null, '', `/d/${docId}`);
 }
+
+const root = document.getElementById('weft-app');
+if (root === null) throw new Error('index.html has no #weft-app root');
+createRoot(root).render(
+  <StrictMode>
+    <Shell url={WS_URL} docId={docId} />
+  </StrictMode>,
+);

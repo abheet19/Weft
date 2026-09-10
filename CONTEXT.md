@@ -1,6 +1,6 @@
 # Weft — current implementation context
 
-> Evidence snapshot: 10 September 2026 IST. Canonical repository: `D:\Code\Weft`; `main` base `45836e827f174b1e2be9eef9f168de43062b4d86`. The brand/UI candidate is committed locally as `8258d59`; Fly release 17 maps to base `45836e8` and does not include that commit.
+> Evidence snapshot updated 10 September 2026 IST. Canonical repository: `D:\Code\Weft`; local `main` carries implementation candidate `9de72a3cc7a325208aa081428595bec7664ee328` plus this documentation update and is two commits ahead of public `main` `55f20884c949f3273d131c8e128da9492b8c5ff6`. Retained deployment evidence maps Fly v18 to `599fd5a99b6e3cc35c00fae19070ee64d5ba355f`; a current anonymous `/health` request returned 200 but exposes no release SHA. The local candidate is not pushed or deployed.
 >
 > This is the short, AI-readable map. Current source and executable tests win if an older design note disagrees. A dirty working tree is a candidate, not a release; a configured URL is not proof that the candidate is deployed.
 
@@ -63,16 +63,16 @@ ProseMirror transaction -> binding/toOps -> local CRDT
 
 Run `npm run docs:check` and `npm run check`; the latter composes typecheck, lint/boundary checks, workspace tests, benchmarks, and Playwright. CI runs these gates. The Docker image builds the client and serves the relay/client through the checked topology. `.github/workflows/release.yml` can deploy Fly after successful `main` CI when the secret is present; the manual guide uses `fly deploy --app weft-abheet --remote-only --depot=false`.
 
-Fly release 17 is mapped to base `45836e8...`. Branding commit `8258d59` is locally tested but is not in that release. After review, rerun both gates at one commit, build/smoke the image, deploy with approval, record image/release/machine/source, and retain release 17 for rollback.
+Fly v18 is mapped to `599fd5a...`. Public `main` at `55f2088...` adds the first-load performance change but exposed a Saved-state correctness failure in CI. Local `9de72a3...` fixes the replacement-relay acknowledgement baseline and passed the exact CI-equivalent local gate; it remains unpublished. After review, rerun both gates on the final documentation tree, build/smoke the image, deploy with approval, record image/release/machine/source, and retain v18 for rollback.
 
 ## Current measured evidence
 
 | Result | Evidence |
 | --- | --- |
-| 612 distinct Vitest tests plus 28 Playwright cases passed; 13 docs checks are separate | `verification-work\weft-final-check.log; D:\Code\Weft\docs\VERIFICATION.md` |
-| Bench: 100k connected replay 250.7 ms; concurrent 365.5 ms; index 110.6 ms; sibling flood 415.5 ms | `verification-work\weft-final-check.log` |
+| Exact `9de72a3...` CI-equivalent gate passed: 612 distinct Vitest tests plus 28 Playwright cases; focused hardening passed 11/11 and E38 repeated 20/20 | `verification-work\portfolio-release-20260910\WEFT_RELAY_ACK_FIX_20260910.md` |
+| Earlier bounded bench on the same CRDT implementation: 100k connected replay 250.7 ms; concurrent 365.5 ms; index 110.6 ms; sibling flood 415.5 ms | `verification-work\weft-final-check.log` |
 | Independent 25 desktop + 6 phone scenarios and local Lighthouse 98 performance/100 accessibility/100 SEO | `D:\Code\Weft\docs\VERIFICATION.md` |
-| Fly v17 maps to `45836e8...`; branding commit `8258d59` is absent | `D:\Work\Weft Study Pack\08_TESTING_ARTIFACT.md` |
+| Fly v18 maps to `599fd5a...`; public `55f2088...` is newer, and verified local fix `9de72a3...` is unpublished | `verification-work\portfolio-release-20260910\WEFT_RELAY_ACK_FIX_20260910.md; D:\Work\Weft Study Pack\08_TESTING_ARTIFACT.md` |
 
 The evidence above belongs to the named local working-tree snapshot unless it explicitly names a release/image. It does not become live evidence merely because a deployment configuration exists.
 

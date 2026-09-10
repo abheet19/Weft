@@ -242,6 +242,29 @@ describe('against a server that misbehaves (bare ws listener)', () => {
     expect(hellos.length).toBe(1 + REHELLO_MAX); // and no more: nothing retries by itself
   });
 
+  it('E38: a replacement relay cannot render Saved until it acknowledges every retained own op', async () => {
+    const store = memoryStore(R.a);
+    await store.putOps(chain(R.a, 1, 3));
+    await store.markAcked({ [R.a]: 3 } as StateVector); // the previous relay had all three
+    const uploads: Op[] = [];
+    let acknowledge = (): void => {
+      throw new Error('the replacement relay has not received the replay');
+    };
+    script = (send, msg) => {
+      if (msg.t === 'hello') send({ v: 1, t: 'welcome', sv: {} });
+      if (msg.t === 'ops') {
+        uploads.push(...msg.ops);
+        acknowledge = () => send({ v: 1, t: 'ack', replica: R.a, seq: 3 });
+      }
+    };
+    const r = await runner(R.a, store);
+    await until(() => r.snapshot().session.s === 'live' && uploads.length === 3, 'all retained ops replayed without an ack');
+    expect(r.snapshot().session).toMatchObject({ s: 'live', unacked: 3 });
+    expect(uploads.map((op) => op.id.seq)).toEqual([1, 2, 3]);
+    acknowledge();
+    await until(() => r.snapshot().session.s === 'live' && r.snapshot().session.unacked === 0, 'saved only after the replacement relay ack');
+  });
+
   it('E37 (C2): unacked is derived from the monotonic acknowledged seq — ack 5 then ack 3 leaves it at 0', async () => {
     script = (send, msg) => {
       if (msg.t === 'hello') send({ v: 1, t: 'welcome', sv: {} });

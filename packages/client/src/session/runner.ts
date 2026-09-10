@@ -2,8 +2,9 @@
 // browser's global `WebSocket`), the timers, and the store, feeds the pure session machine and
 // executes its effects. This file exists to keep every ordering promise the design makes in one
 // spot: a local op is applied, then persisted, then sent (I10 — `ws.send` happens-after
-// `store.putOps` resolved); `unacked` is derived from the persisted seq and a MONOTONIC
-// acknowledged seq (I11, E37); inbound ops go through `apply`, whose seq rule is the client-side
+// `store.putOps` resolved); `unacked` is derived from the persisted seq and an acknowledgement
+// that is monotonic within the current relay epoch (I11, E37); a lower welcome resets that epoch
+// after relay data loss. Inbound ops go through `apply`, whose seq rule is the client-side
 // I9, and a gap answers with a fresh hello; after catch-up, parked ops whose dependency the
 // server counts but never created are dropped (E12) and a pending buffer past the limit ends the
 // session as PENDING_OVERFLOW (E21); the content hash is published in presence after the
@@ -136,7 +137,7 @@ class SessionRunner implements Runner {
   /** My highest seq the store has confirmed, and my highest seq sent on the current socket. */
   private persistedUpTo: number;
   private sentUpTo = 0;
-  /** My highest seq the server has ever confirmed durable. Only ever grows (E37): a late, lower ack says nothing new. */
+  /** My highest seq in the current server view. ACKs only move forward within one socket; a new welcome may lower this after relay data loss. */
   private acked: number;
   /** When each REHELLO on the current socket was sent, within the window; a loop is a failure, not a repair (E36). */
   private rehellos: number[] = [];
@@ -501,6 +502,9 @@ class SessionRunner implements Runner {
       return;
     }
     this.welcomeSv = theirSv;
+    // A welcome is the durable baseline for this relay epoch. If a restarted relay lost its log,
+    // an older acknowledgement must not render Saved while retained own ops are being re-uploaded.
+    this.acked = theirs;
     this.dispatch({ e: 'WELCOME', theirSv, mySv: this.doc.sv });
     this.ackedUpTo(theirs); // the server's sv IS an acknowledgement of everything of mine it holds
     this.checkCatchUp();

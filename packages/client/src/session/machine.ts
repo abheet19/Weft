@@ -150,8 +150,8 @@ function storeFailed(state: SessionState, reason: string): Step {
 
 function acked(state: SessionState, ev: { upToSeq: number; mySeq: number }, now: number): Step {
   // unacked is DERIVED from the two counters (I11), never decremented by a UI event. The runner
-  // supplies `upToSeq` from its monotonic acknowledged vector (E37), so a late, lower ack cannot
-  // make the count go back up.
+  // supplies `upToSeq` from an acknowledged vector that is monotonic within the current welcome
+  // epoch (E37), so a late, lower ack cannot make the count go back up.
   const unacked = Math.max(0, ev.mySeq - ev.upToSeq);
   return state.s === 'live' ? stay({ s: 'live', unacked, lastAckAt: now }) : stay({ ...state, unacked });
 }

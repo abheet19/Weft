@@ -70,7 +70,14 @@ export function CommandPalette({ commands }: { commands: readonly Command[] }): 
   const run = (i: number): void => {
     const command = filtered[i];
     if (command === undefined) return;
-    ran.current = true; // a run closes the palette but lets the command decide focus (e.g. Rename focuses the editor)
+    ran.current = true;
+    // Close the native dialog before the action runs. Browsers restore focus while a modal closes;
+    // closing it after `Rename via heading` focused the editor silently stole focus back.
+    const dialog = dialogRef.current;
+    if (dialog?.open) {
+      if (typeof dialog.close === 'function') dialog.close();
+      else dialog.removeAttribute('open');
+    }
     setOpen(false);
     command.run();
   };

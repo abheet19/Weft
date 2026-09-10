@@ -1,8 +1,8 @@
 # Weft — current implementation context
 
-> Evidence snapshot updated 10 September 2026 IST. Canonical repository: `D:\Code\Weft`; local `main` carries implementation candidate `9de72a3cc7a325208aa081428595bec7664ee328` plus this documentation update and is two commits ahead of public `main` `55f20884c949f3273d131c8e128da9492b8c5ff6`. Retained deployment evidence maps Fly v18 to `599fd5a99b6e3cc35c00fae19070ee64d5ba355f`; a current anonymous `/health` request returned 200 but exposes no release SHA. The local candidate is not pushed or deployed.
+> Evidence snapshot: 10 September 2026 IST. Canonical repository: `D:\Code\Weft`. The release candidate fixes command-palette focus restoration, adds a browser-level all-CTA/recovery matrix, and makes `/health` report the build's exact source SHA. `MEMORY.md` and the external sign-off evidence record the tested and deployed commit; this file does not hard-code its own commit hash because changing that text would create a different commit.
 >
-> This is the short, AI-readable map. Current source and executable tests win if an older design note disagrees. A dirty working tree is a candidate, not a release; a configured URL is not proof that the candidate is deployed.
+> Current source and executable tests win if an older design note disagrees. A dirty working tree is a candidate, a green local run proves only those bytes, and a configured URL is not deployment evidence. Public release proof requires `source SHA -> CI -> image/Fly release -> /health SHA -> browser smoke`.
 
 ## Product contract
 
@@ -61,20 +61,22 @@ ProseMirror transaction -> binding/toOps -> local CRDT
 
 ## CI, packaging, deployment, and rollback
 
-Run `npm run docs:check` and `npm run check`; the latter composes typecheck, lint/boundary checks, workspace tests, benchmarks, and Playwright. CI runs these gates. The Docker image builds the client and serves the relay/client through the checked topology. `.github/workflows/release.yml` can deploy Fly after successful `main` CI when the secret is present; the manual guide uses `fly deploy --app weft-abheet --remote-only --depot=false`.
+`npm run docs:check` validates repository links. `npm run check` composes workspace type checks, ESLint plus dependency/purity boundaries, coverage-enforced unit/property/integration tests, the deterministic 100,000-operation benchmark, and Chromium Playwright. Husky runs lint and typecheck before a commit; GitHub CI repeats the full gate on Windows and Linux. The release workflow checks out the exact successful CI SHA, builds/pushes one container, and passes that SHA into the image as `WEFT_RELEASE_SHA`.
 
-Fly v18 is mapped to `599fd5a...`. Public `main` at `55f2088...` adds the first-load performance change but exposed a Saved-state correctness failure in CI. Local `9de72a3...` fixes the replacement-relay acknowledgement baseline and passed the exact CI-equivalent local gate; it remains unpublished. After review, rerun both gates on the final documentation tree, build/smoke the image, deploy with approval, record image/release/machine/source, and retain v18 for rollback.
+The container supervises the loopback WebSocket relay and Caddy as one process unit. `GET /health` returns JSON containing `status` and the exact `release` SHA injected at build time. Fly release proof must compare that value with the pushed commit and then exercise a real document through the public WebSocket path. The previous Fly image remains the rollback boundary; image rollback does not roll back document data.
 
 ## Current measured evidence
 
 | Result | Evidence |
 | --- | --- |
-| Exact `9de72a3...` CI-equivalent gate passed: 612 distinct Vitest tests plus 28 Playwright cases; focused hardening passed 11/11 and E38 repeated 20/20 | `verification-work\portfolio-release-20260910\WEFT_RELAY_ACK_FIX_20260910.md` |
-| Earlier bounded bench on the same CRDT implementation: 100k connected replay 250.7 ms; concurrent 365.5 ms; index 110.6 ms; sibling flood 415.5 ms | `verification-work\weft-final-check.log` |
-| Independent 25 desktop + 6 phone scenarios and local Lighthouse 98 performance/100 accessibility/100 SEO | `D:\Code\Weft\docs\VERIFICATION.md` |
-| Fly v18 maps to `599fd5a...`; public `55f2088...` is newer, and verified local fix `9de72a3...` is unpublished | `verification-work\portfolio-release-20260910\WEFT_RELAY_ACK_FIX_20260910.md; D:\Work\Weft Study Pack\08_TESTING_ARTIFACT.md` |
+| 613 distinct Vitest cases passed: client 310, client latency 4, CRDT 164, protocol 52, server 83 | `npm run check`, 10 September 2026 |
+| Coverage passed: client 96.44% statements / 94.02% branches / 92.60% functions; CRDT 99.61 / 96.50 / 100; protocol 100 / 99.19 / 100; server 95.29 / 92.83 / 97.53 | configured package coverage gates |
+| Full browser matrix: 33 Chromium cases after the release CTA/recovery test was added | `packages/client/e2e`, real ephemeral relay + production Vite build |
+| Focused release matrix: all 12 palette commands; every toolbar/block/link/notice/recovery CTA; collaboration/offline/reconnect/diagnostics; desktop and 320 px | `packages/client/e2e/release-cta.spec.ts` |
+| 100k benchmark gate passed; measured connected replay 358.3 ms, concurrent replay 597.2 ms, index 142.3 ms, snapshot 426.0 ms, JSON 161.7 ms, sibling flood 523.0 ms, peak heap 207.7 MB | Node 22.22.0 on this Windows machine; bounded synthetic run |
+| Earlier bounded Lighthouse mobile run measured 98 performance, 100 accessibility, 100 SEO, 2.0 s FCP/LCP, 0 ms TBT, and 0.012 CLS | retained lab evidence in `docs/VERIFICATION.md`; not field data |
 
-The evidence above belongs to the named local working-tree snapshot unless it explicitly names a release/image. It does not become live evidence merely because a deployment configuration exists.
+The final external release record under `verification-work/portfolio-release-20260910` names the exact commit, workflow, image/release, `/health` response, and public browser smoke. Metrics above describe the named local run and are not public capacity or certification claims.
 
 ## Open limits
 
@@ -86,13 +88,14 @@ The evidence above belongs to the named local working-tree snapshot unless it ex
 
 ## Reading order
 
-1. `CONTEXT.md` — current contract and live/candidate boundary
-2. `D:\Work\Weft Study Pack\01_Weft_Concepts_From_Zero.md` — CRDT/editor/network vocabulary
-3. `docs/01-DESIGN.md; docs/02-LLD.md` — algorithm, invariants, protocol, slices, and attacks
-4. `packages/crdt; packages/protocol` — pure and wire foundations
-5. `packages/client/src/binding; packages/client/src/session; packages/server/src` — end-to-end operation path
-6. `D:\Work\Weft Study Pack\03_Weft_System_Design_DSA_TypeScript_Walkthrough.md` — DSA/TypeScript/code-to-deploy walkthrough
-7. `docs/SANITY.md; docs/VERIFICATION.md; docs/DEPLOY.md` — execute, evaluate, and release
+1. `CONTEXT.md` — current contract and trust boundaries
+2. `MEMORY.md` — decisions, current evidence, release handoff, and open limits
+3. `D:\Work\Weft Study Pack\01_Weft_Concepts_From_Zero.md` — CRDT/editor/network vocabulary
+4. `docs/01-DESIGN.md; docs/02-LLD.md` — algorithm, invariants, protocol, slices, and attacks
+5. `packages/crdt; packages/protocol` — pure and wire foundations
+6. `packages/client/src/binding; packages/client/src/session; packages/server/src` — end-to-end operation path
+7. `D:\Work\Weft Study Pack\03_Weft_System_Design_DSA_TypeScript_Walkthrough.md` — DSA/TypeScript/code-to-deploy walkthrough
+8. `docs/SANITY.md; docs/VERIFICATION.md; docs/DEPLOY.md` — execute, evaluate, and release
 
 Use `docs/SANITY.md` in the repository, or `09_SANITY_CHECK.md` in the Study Pack, before claiming that a new change works.
 

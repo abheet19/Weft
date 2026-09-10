@@ -32,7 +32,9 @@ RUN VITE_WEFT_WS="$VITE_WEFT_WS" npm run build -w @weft/client
 # ---- runtime stage ----
 FROM node:22-slim AS runtime
 WORKDIR /app
+ARG WEFT_RELEASE_SHA=unknown
 ENV NODE_ENV=production
+ENV WEFT_RELEASE_SHA=$WEFT_RELEASE_SHA
 
 # The static Caddy binary from the official image — no download step, no package manager. Caddy's
 # release binaries are statically linked, so the alpine-built binary runs on this Debian slim base.

@@ -1,10 +1,8 @@
-# Weft — sanity, acceptance, and release guide
+# Weft sanity, usage, and release plan
 
-> Snapshot: 10 September 2026 IST. Run this against disposable or synthetic data. Save the branch, commit, complete dirty-path list, command, exit code, environment, and artifact hashes with every result.
+> Snapshot: 10 September 2026 IST. Use disposable document IDs and synthetic content. Public Weft has no account, permission, privacy, or E2EE boundary.
 
-## Before running
-
-Use a disposable document ID and isolated browser contexts. Never place private content in the public demo. The repository gate starts local services for Playwright; do not infer a live release from that run.
+## Automated gate
 
 ```powershell
 Set-Location 'D:\Code\Weft'
@@ -13,32 +11,19 @@ npm run docs:check
 npm run check
 ```
 
-## Product sanity checklist
+The current release matrix expects 13 documentation checks, 613 distinct Vitest cases, the deterministic 100,000-operation benchmark, and 33 Chromium Playwright cases. Husky runs lint and typecheck before commit; GitHub CI repeats the full gate on Windows and Linux.
 
-- [ ] Two peers converge after simultaneous online edits.
-- [ ] One peer goes truly offline, both continue editing, reconnect catches up, and both reach the same canonical hash/content.
-- [ ] Syncing / On device / Saved labels correspond to memory, IndexedDB, and durable server acknowledgement.
-- [ ] All formatting/link/block/undo controls work; unsafe links fail before shared state changes.
-- [ ] Outline, People/follow, Sync diagnostics, History/return-live, command palette, themes, rename/new-doc, and sidebar controls work by keyboard.
-- [ ] 320/390 px layout exposes primary editor and actions without page overflow or focus trap.
-- [ ] Relay restart/reconnect, duplicate/out-of-order delivery, message drops, malformed/oversized frames, and pending-overflow states fail visibly.
+## Product walkthrough
 
-## Retained evidence for the current candidate
+1. Open `/d/<disposable-id>` in two independent browser contexts. Type in both and wait until their text is identical and both pills read **Saved**.
+2. In one context, open **Sync**, enable **Simulate offline**, and edit in both contexts. Confirm the offline pill counts local changes while the online peer remains Saved. Reconnect, confirm the merge notice, identical content, and both Saved.
+3. Exercise undo/redo, every mark, colour/reset, heading and block type, checklist tick, divider, and link create/copy/open/edit/remove. Try a `javascript:` or `data:` link and confirm it is rejected without changing shared state.
+4. Exercise Outline jump, People/presence/follow, Sync diagnostics, History scrub/authors/return-live, all 12 command-palette actions, message drop/delay, the divergence report, notice actions, and status details.
+5. Repeat the direct-control path at 320 px. Check keyboard focus, visible names, no trapped dialog, reduced-motion behaviour, and readable opaque content surfaces.
+6. Corrupt only a disposable browser database and verify the error card's **Retry** and **Start fresh** paths. Never do this with real content.
 
-- Exact `9de72a3...` evidence in `verification-work/portfolio-release-20260910/WEFT_RELAY_ACK_FIX_20260910.md`: full CI-equivalent gate and 28/28 Playwright passed; focused hardening passed 11/11 and E38 repeated 20/20.
-- `docs/VERIFICATION.md`: 13 docs checks, independent desktop/mobile probes, Lighthouse, and explicit limits.
-- Fly v18 is mapped to `599fd5a...`; public `main` is `55f2088...`; verified local `9de72a3...` fixes the replacement-relay acknowledgement bug and is unpublished.
+There is no import/export workflow in this release. Named restore, accounts, authorization, E2EE, tables/images, multi-region routing, backup restore, and long soak remain outside the product contract.
 
-## Release sequence
+## Deployment proof
 
-1. Review local candidate `9de72a3...` and freeze the accompanying documentation commit.
-2. Rerun docs/check, image build, health, two-peer/offline/mobile, and benchmark gates at that commit.
-3. Deploy with explicit approval; record source, CI, Fly image/release/machine, and post-deploy smoke.
-4. Retain v18 and verify rollback plus log/data compatibility before removing the candidate.
-
-## Claims this guide does not establish
-
-- No accounts, permissions, E2EE, private-document guarantee, rich-table/image support, multi-region durability, or recovery drill.
-- No public soak or field performance evidence; local candidate `9de72a3...` is not deployed in Fly v18.
-
-A green local run is evidence for the exact tested tree. Call a feature deployed only after recording `source commit -> CI run -> image/release -> post-deploy smoke` for the same bytes.
+Build and deploy one reviewed commit with `WEFT_RELEASE_SHA=<full commit SHA>`, then run `WEFT_RELEASE_SHA=<full commit SHA> npm run smoke:live` against the default public origin (or set `WEFT_BASE_URL`). A release is complete only when CI passes, the Fly image is healthy, `/health.release` equals that commit, and a public two-peer/offline/mobile smoke passes with no page errors. Record all four links/identifiers in the external sign-off and retain the prior image for rollback.

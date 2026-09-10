@@ -27,7 +27,8 @@
 	# Fly polls this endpoint. The entrypoint treats Caddy and the relay as one process unit: if the
 	# relay exits it stops Caddy, so this response disappears and the machine is restarted.
 	handle /health {
-		respond "ok" 200
+		header Content-Type "application/json"
+		respond `{"status":"ok","release":"{$WEFT_RELEASE_SHA:unknown}"}` 200
 	}
 
 	# The WebSocket path → the loopback relay. Caddy v2 forwards the Upgrade handshake transparently,

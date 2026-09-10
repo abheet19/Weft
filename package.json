@@ -21,7 +21,8 @@
     "docs:check": "node tools/check-docs.mjs",
     "dev": "node tools/dev.mjs",
     "e2e": "playwright test -c packages/client/playwright.config.ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "smoke:live": "node tools/live-smoke.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

@@ -1,61 +1,49 @@
-# Weft — verification companion, 2026-09-09
+# Weft verification and release evidence — 2026-09-10
 
-Offline collaborative writing: contributors edit the same document during a connection loss, then merge their work and see where it is durably stored.
+Weft's release claim is narrow: anonymous collaborators can edit one document online and offline, reconnect without a conflict dialog, and see honest local-versus-durable save state. All checks use disposable data.
 
-A release can lag the source checkout. The Study Pack's release ledger records the exact pushed SHA, Fly image, health check, and post-deploy browser evidence; this source companion records the reproducible checks without claiming that an uncommitted checkout is live.
+## Current candidate gate
 
-**Configured release check:** `npm run check` passed again on Windows on 2026-09-09. It ran 612 distinct Vitest cases (309 client + 4 latency + 164 CRDT + 52 protocol + 83 server), plus 28 Playwright cases across 11 spec files. The CRDT cases run twice, with and without coverage; those repeated executions are not extra distinct tests. `npm run docs:check` separately passed all 13 documents.
+`npm run docs:check` and `npm run check` are the reproducible release commands. On Node 22.22.0 for the current candidate they pass:
 
-**Changes verified:** Divider insertion at the end of a paragraph preserves its missing explicit boundary. Conversions to/from divider atoms replace a whole node safely. Undo/redo retains color values and checklist checked state. Link creation and editing reject a protocol-invalid URL before dispatch, so a rejected local operation cannot block sync. At 320 and 390 px, the top-bar controls stay inside the viewport, editing/formatting/palette/sidebar flows remain usable, and the save pill clears the sidebar tabs. The Caddy edge sends framing and MIME-sniffing protections and exposes the supervised process-unit health probe.
+- 13 repository documents with every relative link resolved;
+- TypeScript checks in all four workspaces;
+- ESLint, package-direction checks, and purity checks across 34 pure source files;
+- 613 distinct Vitest cases: client 310, client latency 4, CRDT 164, protocol 52, and server 83;
+- coverage gates (client 96.44% statements / 94.02% branches / 92.60% functions; CRDT 99.61 / 96.50 / 100; protocol 100 / 99.19 / 100; server 95.29 / 92.83 / 97.53);
+- 33 Chromium Playwright cases against a production Vite build and a real ephemeral relay.
 
-**Independent exploration:** 25 desktop scenarios passed with zero page errors at `2026-09-09T16:43:57.345Z`; a separate phone audit passed 6 checks at 320 and 390 px with zero page errors at `2026-09-09T17:01:11.914Z`. Source scripts, screenshots, and raw JSON remain in the local verification workspace; those files are evidence, not part of the product bundle.
+The CRDT suite runs once with coverage and once without it; the repeated execution is not counted twice. The focused `release-cta.spec.ts` has five cases and covers every available release CTA at desktop and 320 px, plus corrupt-store recovery.
 
-**Bounded Lighthouse check:** Chrome's mobile profile against a stable `/d/<id>` on the local production build measured 98 performance, 100 accessibility, 100 SEO, 2.0 s FCP/LCP, 0 ms TBT, and 0.012 CLS. The stable toolbar slot removes the loading-to-editor page jump; readable helper/status text uses the existing secondary-text token; fonts no longer block first paint. This is one synthetic run on this machine, not a field-data or device-fleet claim.
+## User-flow coverage
 
-## How to read the evidence
+| Flow | Executed evidence |
+| --- | --- |
+| Online collaboration | two independent contexts edit different and concurrent positions, converge, and reach **Saved** |
+| Offline-first recovery | user-offline socket closure, concurrent edits, exact pending count, tab kill/reopen, reconnect/catch-up, no-loss convergence |
+| Editor | undo/redo; all six inline marks; all text/highlight colours and reset; headings, paragraph, bullet, numbered, checklist, quote, code block, divider |
+| Links | create, copy, open, edit, remove; unsafe create/edit rejected before CRDT dispatch while peers stay **Saved** |
+| Collaboration UI | presence stack/dialog, remote caret, follow/exit-follow, Outline jump, People and Sync tabs |
+| History | scrub to read-only history, author overlay, return to live editing |
+| Command palette | all 12 commands inventoried; filtering, keyboard navigation, Escape focus return, and every stateful action exercised |
+| Diagnostics | state vector copy, simulated message drop/repair, delay switch, divergence tripwire/report, status details, notice action and dismiss |
+| Recovery states | empty document remains editable; a corrupt IndexedDB copy shows an alert; Retry reattempts; Start fresh opens a safe new document |
+| Responsive/accessibility | the complete direct-control flow runs at 1280 px and 320 px; primary controls stay usable; semantic names/roles, focus paths, reduced motion/transparency, and live status/alert copy are preserved |
 
-The release checks below executed against local production builds and disposable fixtures. The independent browser checks used new Playwright contexts and observed rendered state after each action; they are scripted exploratory checks, not human hand-clicking. A passing local fixture, HTTP health response, and live-provider evaluation are different claims.
+There is no import/export CTA in this version. Accounts, document authorization, E2EE, named versions/restore, tables/images, and horizontal/multi-region routing are also outside the implemented contract.
 
-The original [Claude Weft/Vantage plan](https://claude.ai/code/artifact/7a18edf9-1ba9-48ae-b9c2-d5a63e60086a) was not freshly accessible and was not edited or republished. This file is a local companion with a reproducible test order. Earlier W-1–W-9/V-1–V-13 names remain historical references; no exact one-to-one original-item completion is invented.
+## Performance snapshot
 
-## Test order and observed results
+The deterministic benchmark generated and replayed 100,000-operation connected, partitioned, and sibling-flood workloads. It measured connected replay 358.3 ms, concurrent replay 597.2 ms, index construction 142.3 ms, snapshot encode/decode 426.0 ms, JSON stringify/parse 161.7 ms, sibling flood 523.0 ms, and peak observed heap 207.7 MB. Every result met its direct target and the repository's enforced release ceiling.
 
-Run the existing suite first, then the independent browser sequence below against isolated data, then a small deployed smoke check. Do not turn these local probes into production load tests.
+Earlier mobile Lighthouse lab evidence for the same application path measured 98 performance, 100 accessibility, 100 SEO, 2.0 s FCP/LCP, 0 ms TBT, and 0.012 CLS. It is retained evidence, not a fresh field Core Web Vitals percentile. Automated accessibility checks do not constitute third-party WCAG certification or cover every browser, screen reader, switch device, zoom level, or OS combination.
 
-| Order | Steps / expected behavior | Observed |
-|---|---|---|
-| 1 | CTA inventory and initial desktop render | PASS — 29 observed controls |
-| 2 | two independent clients: edit, disconnect, concurrent offline text, reconnect | PASS — both clients converged to `Incident notes: server healthy. offline observation.` |
-| 3 | format on/off: Bold (Ctrl+B) | PASS — toggle reflected in document and acknowledged |
-| 4 | format on/off: Italic (Ctrl+I) | PASS — toggle reflected in document and acknowledged |
-| 5 | format on/off: Underline (Ctrl+U) | PASS — toggle reflected in document and acknowledged |
-| 6 | format on/off: Strikethrough (Ctrl+Shift+S) | PASS — toggle reflected in document and acknowledged |
-| 7 | format on/off: Highlight (Ctrl+Shift+H) | PASS — toggle reflected in document and acknowledged |
-| 8 | format on/off: Inline code (Ctrl+E) | PASS — toggle reflected in document and acknowledged |
-| 9 | block: Bullet list | PASS — document block changed |
-| 10 | block: Numbered list | PASS — document block changed |
-| 11 | block: Checklist | PASS — document block changed |
-| 12 | block: Quote | PASS — document block changed |
-| 13 | block: Code block | PASS — document block changed |
-| 14 | block menu: Heading 1 | PASS — h1 |
-| 15 | block menu: Heading 2 | PASS — h2 |
-| 16 | block menu: Heading 3 | PASS — h3 |
-| 17 | block menu: Paragraph | PASS — p |
-| 18 | Text colour | PASS — {"options": ["", "", "", "", "", "", "", "", "Default"], "undoRedo": "exact formatting restored"} |
-| 19 | Highlight colour | PASS — {"options": ["", "", "", "", "", "", "None"], "undoRedo": "exact formatting restored"} |
-| 20 | divider and undo/redo buttons | PASS — divider removal/reappearance observed |
-| 21 | link create, copy, edit, remove | PASS — all link actions completed |
-| 22 | invalid link is rejected without breaking sync | A live audit of `948efe6` exposed a false pass: `javascript:` rendered locally as an inert `#` link while its rejected op left that client at `Syncing · 1`. The fix rejects it before dispatch, leaves the input open with an error, keeps both peers Saved, and permits following valid links to sync; a two-client Chromium regression covers both create and edit paths. |
-| 23 | history scrub, authors overlay and return to live | PASS — {"max": "7"} |
-| 24 | sidebar tabs and command palette theme/opacity/offline | PASS — all three rail tabs, rail hide/show, theme, transparency, simulated offline, time-travel, author overlay, diagnostics and state-vector actions were inventoried or exercised |
-| 25 | bounded local browser concurrency: 6 independent clients, 10 edit rounds | PASS — 60 insertions / 300 characters; all peers converged each round; p50 787 ms, p95 1,402 ms |
+## Release proof
 
-## Scope and limits
+The image takes `WEFT_RELEASE_SHA`; `/health` returns `{"status":"ok","release":"<sha>"}`. GitHub release automation uses the exact successful CI `head_sha` for its checkout, GHCR build, and Fly build. The external sign-off at `verification-work/portfolio-release-20260910/WEFT_RELEASE_SIGNOFF_20260910.md` records the pushed commit, workflow, image/Fly release, live health SHA, and public browser smoke for one immutable source.
 
-One relay process and one durable log writer. No accounts, document permissions, end-to-end encryption, nested lists, tables, images, server snapshot fast-path, or horizontal room routing. This public demonstration is unsuitable for private documents. Undo reinserted text remains plain by the documented v1 rule; formatting undo itself now retains color values.
+A local Docker build was attempted, but Docker Desktop's Linux daemon was not running. No local image success is claimed. The real Playwright production build passed, and the remote Fly image build plus public smoke are required before sign-off.
 
-The current six-client probe made 60 inserts over 10 rounds (300 characters); end-to-end scripted round latency was p50 787 ms and p95 1,402 ms. These include browser focus, typing and assertion overhead, not just server response time. The final configured benchmark passed its release rule: 100k connected replay 378.0 ms, concurrent replay 510.7 ms, index build 153.5 ms, snapshot encode/decode 454.7 ms, sibling flood 544.9 ms and peak observed heap 206.9 MB. `buildIndex` exceeded its 150 ms target and was reported as a warning, but remained inside the repository's explicit 2× release ceiling. This is a short local concurrency/performance check, not a long soak or public capacity guarantee.
+## Limits
 
-An initial direct root-level Vitest invocation picked a default 5-second timeout and timed out two large binding tests; the repository-configured latency runner subsequently passed with its intended setup. The initial divider/color failures were real product regressions and are covered by added tests; early synchronization/history assertions in the exploratory harness were corrected to wait for actual state.
-
-Not newly verified: every browser/OS/device combination, real-provider semantic accuracy, an authenticated Claude Desktop session, long-running soak, backup restoration, or adversarial security certification. Existing automated cases cover additional failure paths; their execution is not described as hand testing.
+The deployment is one relay and one durable log writer. Browser storage may be evicted, and edits still only in memory can be lost before IndexedDB commits. The public demo has no identity, privacy, authorization, or encryption boundary; never use private documents. The benchmark and browser concurrency checks are bounded tests, not a soak, capacity guarantee, backup restoration drill, or adversarial security certification.

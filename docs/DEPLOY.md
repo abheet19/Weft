@@ -1,11 +1,12 @@
 # Deploying Weft
 
-## Current existing app — 2026-09-09
+## Current existing app — 2026-09-10
 
 Routine releases target **`weft-abheet`** in `sin`; do not run first-install app/database/volume creation again. From this repository, after passing `npm run check` and `npm run docs:check`:
 
 ```powershell
-fly deploy --app weft-abheet --remote-only --depot=false
+$sha = git rev-parse HEAD
+fly deploy --app weft-abheet --remote-only --depot=false --build-arg WEFT_RELEASE_SHA=$sha
 fly status --app weft-abheet
 fly checks list --app weft-abheet
 fly logs --app weft-abheet --no-tail
@@ -13,7 +14,7 @@ fly logs --app weft-abheet --no-tail
 
 The commands below this section describe bootstrap/self-hosting. GitHub release automation waits for successful CI on main and uses its exact `head_sha`; it does not deploy every unvalidated push. The pre-commit hook runs lint/typecheck; the full suite is a separate local/CI gate. See [current verification](VERIFICATION.md) for executed scope.
 
-`fly.toml` polls `GET /health` every 15 seconds with a 3-second timeout after a 20-second grace period. Caddy serves that probe, while `docker-entrypoint.sh` supervises the relay as part of the same process unit: if the relay exits, it stops Caddy and the probe fails so Fly can restart the machine. The probe does not detect a relay process that stays alive but stops making progress; the browser/WebSocket smoke remains the end-to-end check for that path.
+`fly.toml` polls `GET /health` every 15 seconds with a 3-second timeout after a 20-second grace period. Caddy returns `status` plus the `WEFT_RELEASE_SHA` injected into the image. `docker-entrypoint.sh` supervises the relay and Caddy as one process unit: if the relay exits, Caddy stops and the probe fails. Compare `/health.release` with the reviewed commit after every deploy. The probe cannot detect a relay that remains alive but stops making progress, so the public two-peer WebSocket smoke is still required. Run `WEFT_RELEASE_SHA=<full-sha> npm run smoke:live` after the health check; `WEFT_BASE_URL` overrides the default public origin.
 
 For rollback, record the previous image reference before releasing and use `fly deploy --app weft-abheet --image <previous-image-reference>` if needed. Image rollback does not roll back persistent data/migrations. That recovery command was documented, not exercised. `fly secrets list` reveals names only; it cannot retrieve secret values.
 
@@ -28,7 +29,7 @@ Caddy sends `X-Frame-Options: DENY` and `X-Content-Type-Options: nosniff` on pub
 a standalone editor, so it has no embedding contract; refusing frames also avoids clickjacking around
 the anonymous editing surface.
 
-One knob decides where the browser opens its socket: **`VITE_WEFT_WS`**, inlined into the bundle at
+Two build arguments are release-critical: **`VITE_WEFT_WS`** decides where the browser opens its socket and **`WEFT_RELEASE_SHA`** identifies the immutable source in `/health`. `VITE_WEFT_WS` is inlined into the bundle at
 build time. It must be the *same origin* the page is served from, on the `/ws` path
 (`ws://localhost:8080/ws` locally, `wss://<your-app>/ws` behind TLS). Change it and you must rebuild.
 

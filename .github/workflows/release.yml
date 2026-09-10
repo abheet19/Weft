@@ -53,6 +53,7 @@ jobs:
           # The public origin the bundle talks to. Match this to fly.toml's app host.
           build-args: |
             VITE_WEFT_WS=wss://weft-abheet.fly.dev/ws
+            WEFT_RELEASE_SHA=${{ github.event.workflow_run.head_sha }}
 
   # `secrets` cannot be read inside an `if:` (GitHub does not expose that context there), so a tiny
   # gate job maps the secret to an output and the deploy job keys off that — this is what makes the
@@ -85,6 +86,6 @@ jobs:
 
       # --depot=false uses Fly's own Machines builder (inside Fly's network) rather than Depot, whose
       # registry push reaches `_api.internal` — unreachable from a GitHub runner, so the Depot push 401s.
-      - run: flyctl deploy --remote-only --depot=false
+      - run: flyctl deploy --remote-only --depot=false --build-arg WEFT_RELEASE_SHA=${{ github.event.workflow_run.head_sha }}
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

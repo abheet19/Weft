@@ -4,7 +4,7 @@ Offline collaborative writing: contributors edit the same document during a conn
 
 A release can lag the source checkout. The Study Pack's release ledger records the exact pushed SHA, Fly image, health check, and post-deploy browser evidence; this source companion records the reproducible checks without claiming that an uncommitted checkout is live.
 
-**Configured release check:** `npm run check` passed again on Windows on 2026-09-09. It ran 612 distinct Vitest cases (309 client + 4 latency + 164 CRDT + 52 protocol + 83 server), plus 28 Playwright cases across 11 spec files. The CRDT cases run twice, with and without coverage; those repeated executions are not extra distinct tests. `npm run docs:check` separately passed all 12 documents.
+**Configured release check:** `npm run check` passed again on Windows on 2026-09-09. It ran 612 distinct Vitest cases (309 client + 4 latency + 164 CRDT + 52 protocol + 83 server), plus 28 Playwright cases across 11 spec files. The CRDT cases run twice, with and without coverage; those repeated executions are not extra distinct tests. `npm run docs:check` separately passed all 13 documents.
 
 **Changes verified:** Divider insertion at the end of a paragraph preserves its missing explicit boundary. Conversions to/from divider atoms replace a whole node safely. Undo/redo retains color values and checklist checked state. Link creation and editing reject a protocol-invalid URL before dispatch, so a rejected local operation cannot block sync. At 320 and 390 px, the top-bar controls stay inside the viewport, editing/formatting/palette/sidebar flows remain usable, and the save pill clears the sidebar tabs. The Caddy edge sends framing and MIME-sniffing protections and exposes the supervised process-unit health probe.
 

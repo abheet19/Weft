@@ -201,7 +201,7 @@ export function Shell({ url, docId }: ShellProps): React.JSX.Element {
       </div>
       <header className="topbar glass">
         <a className="brand inner" href="/" aria-label="Weft home">
-          <Icon name="weft" />
+          <img className="brand-mark" src="/brand/mark.svg" alt="" />
           <span>Weft</span>
         </a>
         <div className="title inner">

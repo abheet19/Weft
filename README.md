@@ -2,6 +2,8 @@
 
 <br>
 
+<img src="brand/mark.svg" alt="Weft mark" width="112">
+
 # ⌗ &nbsp;W E F T
 
 ### **Two people. One document. No lost edits.**

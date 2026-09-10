@@ -52,7 +52,7 @@ h1, h2, h3, p { margin: 0 }
 .topbar { position: sticky; top: 12px; z-index: 20; margin: 12px 24px 0; height: var(--top-h);
   display: flex; align-items: center; gap: 8px; padding: 0 10px }
 .brand { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px 0 8px; font-weight: 600; letter-spacing: -.01em; color: var(--ink) }
-.brand .i { color: var(--accent) }
+.brand-mark { display: block; width: 24px; height: 24px; border-radius: 7px; flex: none }
 .title { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; font-size: 13px; font-weight: 500; color: var(--ink); max-width: 40vw }
 .title #title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .title .docid { font-size: 11px; color: var(--ink-3) }

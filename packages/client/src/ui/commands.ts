@@ -20,6 +20,11 @@ export interface Command {
 
 /** The behaviours and current values the shell wires each command to. All of them already exist elsewhere in the shell; the palette only re-exposes them. */
 export interface PaletteActions {
+  /** Navigate — the app shell's four screens (redesign nav rail); ⌘K is a second front door to the same four buttons. */
+  goDocuments(): void;
+  goEditor(): void;
+  goHistory(): void;
+  goSettings(): void;
   /** Document */
   renameViaHeading(): void;
   newDocument(): void;
@@ -49,6 +54,10 @@ const onOff = (on: boolean): string => (on ? 'On' : 'Off');
 /** The palette's rows, in the groups and order of 03-UI §4.8. Built fresh on each render so the values (theme, On/Off, name, N) reflect the current state. */
 export function paletteCommands(a: PaletteActions): readonly Command[] {
   return [
+    { group: 'Navigate', title: 'Documents', icon: 'grid', run: a.goDocuments },
+    { group: 'Navigate', title: 'Editor', icon: 'pen', run: a.goEditor },
+    { group: 'Navigate', title: 'History screen', icon: 'clock', run: a.goHistory },
+    { group: 'Navigate', title: 'Settings', icon: 'gear', run: a.goSettings },
     { group: 'Document', title: 'Rename via heading', icon: 'h1', run: a.renameViaHeading },
     { group: 'Document', title: 'New document', icon: 'plus', run: a.newDocument },
     { group: 'Document', title: 'Theme', icon: 'sun', value: a.themeLabel, run: a.toggleTheme },

@@ -209,13 +209,16 @@ h1, h2, h3, p { margin: 0 }
 .btn[disabled] { opacity: .4; cursor: default }
 
 /* ---------- 13b. HISTORY / TIME-TRAVEL (§4.6) — ported from prototype §13 (range) and §10 (author overlay) ---------- */
-/* The range slider: track fill is a CSS var the History component sets from the position (prototype §13). */
-.rail input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 20px; margin: 6px 0 4px; background: none; cursor: pointer }
-.rail input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--accent) var(--fill, 100%), var(--line) 0) }
-.rail input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--line) }
-.rail input[type="range"]::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--accent) }
-.rail input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px; border-radius: 50%; background: var(--ink); border: 2px solid var(--paper); box-shadow: 0 1px 4px oklch(0% 0 0 / .4) }
-.rail input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--ink); border: 2px solid var(--paper) }
+/* The range slider: track fill is a CSS var the History component sets from the position (prototype §13).
+   `.screenpage` is added (redesign): History.tsx's own <input> carries no class of its own and is
+   normally styled only via its `.rail` ancestor (the sidebar); HistoryScreen.tsx reuses the SAME
+   component full-page inside `.screenpage`, not `.rail`, so every rule here styles both ancestors. */
+.rail input[type="range"], .screenpage input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 20px; margin: 6px 0 4px; background: none; cursor: pointer }
+.rail input[type="range"]::-webkit-slider-runnable-track, .screenpage input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--accent) var(--fill, 100%), var(--line) 0) }
+.rail input[type="range"]::-moz-range-track, .screenpage input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--line) }
+.rail input[type="range"]::-moz-range-progress, .screenpage input[type="range"]::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--accent) }
+.rail input[type="range"]::-webkit-slider-thumb, .screenpage input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px; border-radius: 50%; background: var(--ink); border: 2px solid var(--paper); box-shadow: 0 1px 4px oklch(0% 0 0 / .4) }
+.rail input[type="range"]::-moz-range-thumb, .screenpage input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--ink); border: 2px solid var(--paper) }
 .hist-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11.5px; color: var(--ink-3) }
 .chk { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; color: var(--ink-2) }
 .hint { margin-top: 8px; font-size: 11px; line-height: 1.5; color: var(--ink-2) }
@@ -392,3 +395,111 @@ kbd { font: 500 11px/1 var(--font-mono); padding: 3px 5px; border-radius: 5px; b
   .pop-pres { left: auto; right: 0; width: min(312px, calc(100vw - 16px)) }
 }
 @media (max-width: 340px) { .toolbar-host { min-height: 154px } }
+
+/* ---------- 22. APP SHELL + NAV RAIL (redesign) — the left icon rail across all four screens ---------- */
+/* App.tsx's root: NavRail beside whichever screen is mounted. Everything Shell.tsx already renders
+   (`.ground`, `.topbar`, `.shell`, `.pill`) is unchanged and lives inside `.appstage`; only its
+   available width changes, by exactly the rail's own width. */
+.appshell { display: flex; min-height: 100vh }
+.appstage { flex: 1 1 auto; min-width: 0 }
+.navrail { flex: 0 0 auto; width: 72px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 14px 0 12px; position: sticky; top: 0; height: 100vh; z-index: 35;
+  background: var(--gl-fill); backdrop-filter: var(--gl-blur); -webkit-backdrop-filter: var(--gl-blur);
+  border-right: 1px solid var(--gl-edge); box-shadow: var(--gl-shadow) }
+.navrail-brand { width: 38px; height: 38px; border-radius: var(--r-2); display: grid; place-items: center; margin-bottom: 8px;
+  background: color-mix(in oklch, var(--accent) 20%, var(--raised)); border: 1px solid var(--gl-edge) }
+.navrail-brand img { width: 20px; height: 20px; display: block }
+.navrail-items { display: flex; flex-direction: column; gap: 3px; width: 100%; align-items: center }
+.navrail-btn { width: 58px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 2px 7px;
+  border-radius: var(--r-2); color: var(--ink-3); font-size: 10px; font-weight: 600; letter-spacing: .01em;
+  transition: background var(--t-fast), color var(--t-fast) }
+.navrail-btn .i { width: 18px; height: 18px }
+.navrail-btn:hover { background: var(--raised); color: var(--ink-2) }
+.navrail-btn.on { background: color-mix(in oklch, var(--accent) 16%, transparent); color: var(--accent) }
+.navrail-eco { width: 34px; height: 34px; display: grid; place-items: center; border-radius: var(--r-1); color: var(--ink-3);
+  transition: color var(--t-fast), background var(--t-fast) }
+.navrail-eco:hover { color: var(--ink); background: var(--raised) }
+.navrail-eco .i { width: 15px; height: 15px }
+/* The status pill is `position: fixed` (StatusPill.tsx's `.pill`, left: 20px) against the VIEWPORT,
+   so on desktop it must clear the rail's own 72px width or it renders half-hidden underneath it. */
+.pill { left: 92px }
+
+@media (max-width: 640px) {
+  /* A phone gets a bottom tab bar instead of a left column, so it never competes with the top bar
+     and document width the existing 320px layout above was already tuned to fit exactly. */
+  .appshell { display: block }
+  .navrail { position: fixed; left: 0; right: 0; bottom: 0; top: auto; width: auto; height: auto; z-index: 50;
+    flex-direction: row; padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px)); gap: 0;
+    border-right: none; border-top: 1px solid var(--gl-edge) }
+  .navrail-brand, .navrail-eco { display: none } /* the bar is just the four destinations on a phone */
+  .navrail-items { flex-direction: row; justify-content: space-around }
+  .navrail-btn { width: auto; flex: 1 1 0; padding: 6px 2px }
+  .pill { left: 20px; bottom: 72px } /* rail is a bottom bar here, not a left column — clear it instead */
+}
+
+/* ---------- 23. FULL-PAGE SCREENS (redesign) — shared chrome for Documents/History/Settings ---------- */
+.shell.shell--screen { display: block; max-width: none; padding: 0 }
+.screenpage { width: 100%; max-width: 860px; margin: 0 auto; padding: 28px 24px 96px; display: flex; flex-direction: column; gap: 18px; font-family: var(--font-ui) }
+.screenpage-h { font-size: clamp(1.4rem, 1.1rem + 1vw, 1.8rem); font-weight: 600; letter-spacing: -.01em; color: var(--ink) }
+.screenpage-sub { color: var(--ink-2); font-size: 13.5px; line-height: 1.55; max-width: 68ch; margin-top: -8px }
+
+/* ---------- 24. DOCUMENTS SCREEN (redesign) ---------- */
+.docs-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap }
+.docs-search { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: var(--r-2); background: var(--raised); border: 1px solid var(--line) }
+.docs-search .i { color: var(--ink-3) }
+.docs-search input { flex: 1; min-width: 0; background: none; border: 0; outline: none; color: var(--ink); font: inherit; font-size: 13.5px }
+.docs-search input::placeholder { color: var(--ink-3) }
+.docs-count { color: var(--ink-3); font-size: 12px; white-space: nowrap }
+.docs-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 48px 24px; text-align: center }
+.docs-empty .i { width: 30px; height: 30px; color: var(--ink-3) }
+.docs-empty h2 { font-size: 15px; font-weight: 600; color: var(--ink) }
+.docs-empty p { color: var(--ink-2); font-size: 13px; max-width: 42ch }
+.docs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px }
+.doc-card { position: relative; text-align: left; display: flex; flex-direction: column; gap: 8px; padding: 16px 16px 14px;
+  cursor: pointer; transition: transform var(--t-fast) var(--ease), border-color var(--t-fast) }
+.doc-card:hover { transform: translateY(-2px); border-color: var(--ink-3) }
+.doc-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.doc-card h3 { font-size: 14px; font-weight: 600; line-height: 1.3; color: var(--ink); padding-right: 20px }
+.doc-card-meta { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-3) }
+.doc-card-foot { font-size: 11px; color: var(--ink-3); padding-top: 6px; border-top: 1px solid var(--line) }
+.doc-card-forget { position: absolute; top: 10px; right: 10px; width: 24px; height: 24px; display: grid; place-items: center;
+  border-radius: var(--r-1); color: var(--ink-3); opacity: 0; transition: opacity var(--t-fast), background var(--t-fast), color var(--t-fast) }
+.doc-card-forget .i { width: 12px; height: 12px }
+.doc-card:hover .doc-card-forget, .doc-card-forget:focus-visible { opacity: 1 }
+.doc-card-forget:hover { background: color-mix(in oklch, var(--bad) 16%, transparent); color: var(--bad) }
+
+/* ---------- 25. SETTINGS SCREEN (redesign) ---------- */
+.settings-layout { display: grid; grid-template-columns: 190px 1fr; gap: 20px; align-items: start }
+.settings-nav { display: flex; flex-direction: column; gap: 2px; position: sticky; top: 28px }
+.settings-nav button { display: flex; align-items: center; gap: 9px; width: 100%; padding: 9px 10px; border-radius: var(--r-1);
+  color: var(--ink-2); font-size: 13px; font-weight: 600; text-align: left; transition: background var(--t-fast), color var(--t-fast) }
+.settings-nav button .i { width: 15px; height: 15px }
+.settings-nav button:hover { background: var(--raised); color: var(--ink) }
+.settings-nav button.on { background: color-mix(in oklch, var(--accent) 16%, transparent); color: var(--accent) }
+.settings-body { min-width: 0; display: flex; flex-direction: column; gap: 16px }
+.settings-body .panel-h .sub { font-size: 11.5px; color: var(--ink-3) }
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; color: var(--ink) }
+.set-row:last-child { border-bottom: none; padding-bottom: 2px }
+.set-row .desc { display: block; font-size: 11.5px; color: var(--ink-3); margin-top: 2px; font-weight: 400 }
+.set-input { height: 32px; padding: 0 10px; border-radius: var(--r-1); border: 1px solid var(--line); background: var(--paper); color: var(--ink); font: inherit; font-size: 13px; width: 200px }
+.segmented { display: inline-flex; padding: 3px; border-radius: var(--r-1); background: var(--paper); border: 1px solid var(--line) }
+.segmented button { padding: 6px 12px; border-radius: 7px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); transition: background var(--t-fast), color var(--t-fast) }
+.segmented button.on { background: color-mix(in oklch, var(--accent) 16%, transparent); color: var(--accent) }
+.accent-swatches { display: flex; gap: 8px }
+.accent-swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; position: relative }
+.accent-swatch.on { border-color: var(--ink) }
+.accent-swatch.on::after { content: "✓"; position: absolute; inset: 0; display: grid; place-items: center; font-size: 11px; color: #06110f; text-shadow: 0 1px 1px oklch(100% 0 0 / .4) }
+.accent-cyan { background: oklch(78% 0.14 200) }
+.accent-amber { background: oklch(80% 0.15 75) }
+.shortcut-table { display: flex; flex-direction: column }
+.shortcut-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--ink) }
+.shortcut-row:last-child { border-bottom: none }
+@media (max-width: 760px) { .settings-layout { grid-template-columns: 1fr } .settings-nav { position: static; flex-direction: row; overflow-x: auto; gap: 4px } .settings-nav button { white-space: nowrap } }
+
+/* ---------- 26. HISTORY SCREEN (redesign) — the full-page time-travel view ---------- */
+.history-preview .page.history-page { padding: 40px 48px; min-height: 220px }
+.history-preview .doc.history { pointer-events: none }
+.history-restore { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px }
+.history-restore .i { color: var(--ink-3); margin-top: 2px }
+.history-restore strong { display: block; font-size: 13px; color: var(--ink) }
+.history-restore p { font-size: 12px; color: var(--ink-2); margin-top: 2px }

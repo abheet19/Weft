@@ -34,8 +34,12 @@ test('every command-palette action is present and stateful actions produce visib
 
   await page.getByRole('button', { name: 'Open command palette (Ctrl+K)' }).click();
   const dialog = page.getByRole('dialog', { name: 'Command palette' });
-  await expect(dialog.getByRole('option')).toHaveCount(12);
+  await expect(dialog.getByRole('option')).toHaveCount(16);
   for (const title of [
+    'Documents',
+    'Editor',
+    'History screen',
+    'Settings',
     'Rename via heading',
     'New document',
     'Theme',
@@ -52,6 +56,15 @@ test('every command-palette action is present and stateful actions produce visib
     await expect(dialog.getByRole('option').filter({ hasText: title })).toHaveCount(1);
   }
   await page.keyboard.press('Escape');
+
+  // The redesign's nav-rail destinations, also reachable from the palette (03-UI's ⌘K "Navigate" group).
+  await runCommand(page, 'Settings');
+  await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible();
+  await runCommand(page, 'History screen');
+  // level: 1 — the screen's own title, not the reused History panel's "History" h2 inside it.
+  await expect(page.getByRole('heading', { name: 'History', level: 1 })).toBeVisible();
+  await runCommand(page, 'Editor');
+  await expect(editor(page)).toBeVisible();
 
   await runCommand(page, 'Rename via heading');
   await expect(editor(page)).toBeFocused();

@@ -11,6 +11,13 @@
 // New document (the router), Rename via heading (focus the editor at the title), Set my name / Follow
 // / the History and Debug controls — and hands them to `paletteCommands`. Every one is a control the
 // top bar, the rail or the keyboard already exposes; the palette invents nothing.
+// The redesign (App.tsx, NavRail.tsx) adds a `screen` prop: 'editor' is this file's original layout,
+// unchanged; 'history' and 'settings' swap the `<main>` body for HistoryScreen/SettingsScreen while
+// keeping the SAME live session, top bar and status pill — switching screens costs nothing on the
+// wire. It also derives a live title from the document's own content (`docTitle.ts`, no schema
+// change) and persists the theme/accent/reduce-transparency choice and this document's entry in the
+// local Documents registry (`uiPrefs.ts`, `recents.ts`) — both disposable presentation state behind
+// `browserStorage.ts`'s guarded `localStorage`, never the durable per-document store.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Selection } from 'prosemirror-state';
@@ -22,23 +29,34 @@ import { isDiverged } from '../inspector/divergence.ts';
 import { colorOf } from '../presence/colors.ts';
 import { initialSession } from '../session/machine.ts';
 import type { BindingFault } from '../binding/plugin.ts';
+import type { Screen } from './App.tsx';
+import { safeLocalStorage } from './browserStorage.ts';
 import { CommandPalette } from './CommandPalette.tsx';
 import { paletteCommands } from './commands.ts';
 import { Editor } from './Editor.tsx';
 import { errorCard, NOTICE, type Failure } from './copy.ts';
 import { History } from './History.tsx';
 import { HistoryDoc } from './HistoryDoc.tsx';
-import { Icon, IconSprite } from './Icons.tsx';
+import { HistoryScreen } from './HistoryScreen.tsx';
+import { Icon } from './Icons.tsx';
 import { Notice, type NoticeModel } from './Notice.tsx';
 import { Page, type PageMode } from './Page.tsx';
 import { Presence } from './Presence.tsx';
+import { touchRecent } from './recents.ts';
 import { Sidebar, type OutlineItem } from './Sidebar.tsx';
+import { SettingsScreen } from './SettingsScreen.tsx';
 import { StatusPill } from './StatusPill.tsx';
+import { readUiPrefs, writeUiPrefs, type Accent, type ThemeChoice } from './uiPrefs.ts';
 import { useSession } from './useSession.ts';
 
 interface ShellProps {
   url: string;
   docId: string;
+  /** Which of the app shell's four destinations is showing (App.tsx owns this); defaults to the
+      original single-screen behaviour so every existing test keeps working unchanged. */
+  screen?: Screen;
+  /** Lets a control inside Shell (the ⌘K "Navigate" group) ask App to switch screens. A no-op default so Shell keeps working when mounted standalone, as the test suite does. */
+  onNavigate?: (screen: Screen) => void;
 }
 
 /** A fault in one sentence for the notice; the full structure goes to the console. */
@@ -59,7 +77,7 @@ function divergenceReport(docId: string, diverged: ReadonlyMap<ReplicaId, { peer
   return `Weft divergence report\ndoc ${docId}\n${lines.join('\n')}`;
 }
 
-export function Shell({ url, docId }: ShellProps): React.JSX.Element {
+export function Shell({ url, docId, screen = 'editor', onNavigate }: ShellProps): React.JSX.Element {
   const [attempt, setAttempt] = useState(0);
   const [notices, setNotices] = useState<readonly NoticeModel[]>([]);
   const [railOpen, setRailOpen] = useState(true);
@@ -68,10 +86,13 @@ export function Shell({ url, docId }: ShellProps): React.JSX.Element {
   /** The time-travel slider position; null when live (not scrubbing). While scrubbing the page is read-only (03-UI §4.6). */
   const [historyPos, setHistoryPos] = useState<number | null>(null);
   const [showAuthors, setShowAuthors] = useState(false);
-  /** ⌘K controls (03-UI §4.8/§2.2): an explicit theme and reduce-transparency choice, since neither `prefers-*` is Baseline; a display-name override; and the live editor view so "Rename via heading" can focus the title. */
-  const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
-  const [flat, setFlat] = useState(false);
+  /** The redesign's persisted look (theme/flat/accent), read once and kept in sync with localStorage on every change — see `uiPrefs.ts`. */
+  const storage = useRef(safeLocalStorage());
+  const [uiPrefs, setUiPrefs] = useState(() => readUiPrefs(storage.current));
+  const { theme, flat, accent } = uiPrefs;
   const [nameOverride, setNameOverride] = useState<string | null>(null);
+  /** The document's own derived title (`docTitle.ts`) — never stored, re-read from the live editor on every change. */
+  const [title, setTitle] = useState<string | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   /** Where the persistent toolbar portals to (S6): a sibling of `.page`, not nested inside its padded
       paper, so the toolbar is a bar ABOVE the document rather than content floating inside it. Editor
@@ -79,11 +100,19 @@ export function Shell({ url, docId }: ShellProps): React.JSX.Element {
   const [toolbarSlot, setToolbarSlot] = useState<HTMLDivElement | null>(null);
   useEffect(() => {
     if (theme !== null) document.documentElement.dataset.theme = theme;
+    else delete document.documentElement.dataset.theme;
   }, [theme]);
   useEffect(() => {
     if (flat) document.documentElement.dataset.flat = '1';
     else delete document.documentElement.dataset.flat;
   }, [flat]);
+  useEffect(() => {
+    document.documentElement.dataset.accent = accent;
+  }, [accent]);
+  useEffect(() => writeUiPrefs(storage.current, uiPrefs), [uiPrefs]);
+  const setTheme = useCallback((next: ThemeChoice) => setUiPrefs((p) => ({ ...p, theme: next })), []);
+  const setFlat = useCallback((next: boolean) => setUiPrefs((p) => ({ ...p, flat: next })), []);
+  const setAccent = useCallback((next: Accent) => setUiPrefs((p) => ({ ...p, accent: next })), []);
   /** One notice per id: a newer answer replaces the older question. */
   const show = useCallback((notice: NoticeModel) => setNotices((was) => [...was.filter((n) => n.id !== notice.id), notice]), []);
   const dismiss = useCallback((id: string) => setNotices((was) => was.filter((n) => n.id !== id)), []);
@@ -147,6 +176,7 @@ export function Shell({ url, docId }: ShellProps): React.JSX.Element {
     void navigator.clipboard?.writeText(divergenceReport(docId, ready.snapshot.diverged)).catch(() => undefined);
     ready.session.runner.dismissDivergence();
   };
+  const goto = useCallback((next: Screen) => onNavigate?.(next), [onNavigate]);
 
   // The ⌘K palette's rows (03-UI §4.8), built once the session is ready so every value (theme, name,
   // On/Off, the state vector to copy) is current. Every leaf is a control that already exists here.
@@ -154,6 +184,10 @@ export function Shell({ url, docId }: ShellProps): React.JSX.Element {
     ready === null
       ? null
       : paletteCommands({
+          goDocuments: () => goto('documents'),
+          goEditor: () => goto('editor'),
+          goHistory: () => goto('history'),
+          goSettings: () => goto('settings'),
           renameViaHeading: () => {
             const view = viewRef.current;
             if (view === null) return;
@@ -161,10 +195,10 @@ export function Shell({ url, docId }: ShellProps): React.JSX.Element {
             view.focus();
           },
           newDocument: () => location.assign(`/d/${newDocId()}`),
-          themeLabel: theme === 'light' ? 'Light' : 'Dark',
-          toggleTheme: () => setTheme((t) => (t === 'light' ? 'dark' : 'light')),
+          themeLabel: theme === 'light' ? 'Light' : theme === 'dark' ? 'Dark' : 'System',
+          toggleTheme: () => setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? null : 'light'),
           transparencyOn: flat,
-          toggleTransparency: () => setFlat((f) => !f),
+          toggleTransparency: () => setFlat(!flat),
           myName: displayName,
           setMyName: () => {
             const next = window.prompt('Your name', displayName)?.trim();
@@ -191,32 +225,100 @@ export function Shell({ url, docId }: ShellProps): React.JSX.Element {
           copyStateVector: () => void navigator.clipboard?.writeText(JSON.stringify(ready.snapshot.sv)).catch(() => undefined),
         });
 
+  const topbar = (
+    <header className="topbar glass">
+      <a className="brand inner" href="/" aria-label="Weft home">
+        <img className="brand-mark" src="/brand/mark.svg" alt="" />
+        <span>Weft</span>
+      </a>
+      <div className="title inner">
+        <span id="title">{title !== null && title.trim() !== '' ? title : 'Weft'}</span>
+        <span className="docid mono" title="document id">
+          {docId}
+        </span>
+      </div>
+      <span className="grow" />
+      {self !== null && ready !== null && <Presence self={self} peers={ready.snapshot.peers} connected={connected} follow={follow} onFollow={onFollow} />}
+      {commands !== null && <CommandPalette commands={commands} />}
+      {screen === 'editor' && (
+        <button type="button" className="gbtn icon" aria-label="Toggle sidebar" aria-expanded={railOpen} onClick={() => setRailOpen((was) => !was)}>
+          <Icon name="panel" />
+        </button>
+      )}
+    </header>
+  );
+
+  if (screen === 'settings') {
+    return (
+      <>
+        <div className="ground" aria-hidden="true">
+          <div className="blob b1" />
+          <div className="blob b2" />
+          <div className="blob b3" />
+        </div>
+        {topbar}
+        <main className="shell shell--screen">
+          <SettingsScreen
+            theme={theme}
+            onTheme={setTheme}
+            flat={flat}
+            onFlat={setFlat}
+            accent={accent}
+            onAccent={setAccent}
+            doc={
+              ready === null
+                ? null
+                : {
+                    displayName,
+                    onRename: (name) => {
+                      setNameOverride(name);
+                      ready.session.runner.setName(name);
+                    },
+                    userOffline,
+                    onSetUserOffline: (offline) => ready.session.setUserOffline(offline),
+                    session: ready.session,
+                    snapshot: ready.snapshot,
+                  }
+            }
+          />
+        </main>
+        <StatusPill session={session} storage={ready === null ? { kind: 'idb' } : ready.storage} onRetry={retry} />
+      </>
+    );
+  }
+
+  if (screen === 'history') {
+    return (
+      <>
+        <div className="ground" aria-hidden="true">
+          <div className="blob b1" />
+          <div className="blob b2" />
+          <div className="blob b3" />
+        </div>
+        {topbar}
+        <main className="shell shell--screen">
+          {ready === null ? (
+            <div className="screenpage" aria-label="History">
+              <h1 className="screenpage-h">History</h1>
+              <p className="screenpage-sub">Opening this document…</p>
+            </div>
+          ) : (
+            <HistoryScreen base={ready.session.runner.history().base} ops={ready.session.runner.history().ops} length={historyLength} position={historyPos ?? historyLength} onPosition={(p) => setHistoryPos(p >= historyLength ? null : p)} showAuthors={showAuthors} onShowAuthors={setShowAuthors} />
+          )}
+        </main>
+        <StatusPill session={session} storage={ready === null ? { kind: 'idb' } : ready.storage} onRetry={retry} />
+      </>
+    );
+  }
+
   return (
     <>
-      <IconSprite />
       <div className="ground" aria-hidden="true">
         <div className="blob b1" />
         <div className="blob b2" />
         <div className="blob b3" />
       </div>
-      <header className="topbar glass">
-        <a className="brand inner" href="/" aria-label="Weft home">
-          <img className="brand-mark" src="/brand/mark.svg" alt="" />
-          <span>Weft</span>
-        </a>
-        <div className="title inner">
-          <span id="title">Weft</span>
-          <span className="docid mono" title="document id">
-            {docId}
-          </span>
-        </div>
-        <span className="grow" />
-        {self !== null && ready !== null && <Presence self={self} peers={ready.snapshot.peers} connected={connected} follow={follow} onFollow={onFollow} />}
-        {commands !== null && <CommandPalette commands={commands} />}
-        <button type="button" className="gbtn icon" aria-label="Toggle sidebar" aria-expanded={railOpen} onClick={() => setRailOpen((was) => !was)}>
-          <Icon name="panel" />
-        </button>
-      </header>
+      {topbar}
       <main className={`shell${railOpen ? '' : ' rail-closed'}`}>
         <div className="col">
           {diverged && ready !== null && (
@@ -239,7 +341,21 @@ export function Shell({ url, docId }: ShellProps): React.JSX.Element {
               <HistoryDoc base={ready.session.runner.history().base} ops={ready.session.runner.history().ops} position={historyPos ?? historyLength} showAuthors={showAuthors} />
             ) : (
               ready !== null && (
-                <Editor host={ready.host} onFault={onFault} peers={ready.snapshot.peers} reportCursor={reportCursor} follow={follow} onExitFollow={() => setFollow(null)} onView={(view) => (viewRef.current = view)} onOutline={setOutline} toolbarSlot={toolbarSlot} />
+                <Editor
+                  host={ready.host}
+                  onFault={onFault}
+                  peers={ready.snapshot.peers}
+                  reportCursor={reportCursor}
+                  follow={follow}
+                  onExitFollow={() => setFollow(null)}
+                  onView={(view) => (viewRef.current = view)}
+                  onOutline={setOutline}
+                  onTitle={(next, words) => {
+                    setTitle(next);
+                    touchRecent(storage.current, { id: docId, title: next, words }, Date.now());
+                  }}
+                  toolbarSlot={toolbarSlot}
+                />
               )
             )}
           </Page>
@@ -252,3 +368,4 @@ export function Shell({ url, docId }: ShellProps): React.JSX.Element {
     </>
   );
 }
+

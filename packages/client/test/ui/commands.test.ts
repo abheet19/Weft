@@ -10,6 +10,10 @@ import { filterCommands, paletteCommands, type PaletteActions } from '../../src/
 /** A PaletteActions whose every function is a spy and whose values are fixed, so a test can assert which action a row runs. */
 function spies(over: Partial<PaletteActions> = {}): PaletteActions {
   return {
+    goDocuments: vi.fn(),
+    goEditor: vi.fn(),
+    goHistory: vi.fn(),
+    goSettings: vi.fn(),
     renameViaHeading: vi.fn(),
     newDocument: vi.fn(),
     themeLabel: 'Dark',
@@ -35,8 +39,9 @@ function spies(over: Partial<PaletteActions> = {}): PaletteActions {
 const find = (a: PaletteActions, title: string) => paletteCommands(a).find((c) => c.title === title)!;
 
 describe('paletteCommands groups and order', () => {
-  it('lists the four groups of 03-UI §4.8 in order, contiguously', () => {
+  it('lists the five groups (Navigate, then 03-UI §4.8’s four) in order, contiguously', () => {
     expect(paletteCommands(spies()).map((c) => c.group)).toEqual([
+      'Navigate', 'Navigate', 'Navigate', 'Navigate',
       'Document', 'Document', 'Document', 'Document',
       'Collaboration', 'Collaboration',
       'History', 'History',
@@ -46,6 +51,7 @@ describe('paletteCommands groups and order', () => {
 
   it('titles every row with the labels from the design', () => {
     expect(paletteCommands(spies()).map((c) => c.title)).toEqual([
+      'Documents', 'Editor', 'History screen', 'Settings',
       'Rename via heading', 'New document', 'Theme', 'Reduce transparency',
       'Set my name', 'Follow…',
       'Time-travel', 'Show authors',
@@ -56,6 +62,10 @@ describe('paletteCommands groups and order', () => {
 
 describe('each row runs exactly its wired action', () => {
   const cases: ReadonlyArray<readonly [string, keyof PaletteActions]> = [
+    ['Documents', 'goDocuments'],
+    ['Editor', 'goEditor'],
+    ['History screen', 'goHistory'],
+    ['Settings', 'goSettings'],
     ['Rename via heading', 'renameViaHeading'],
     ['New document', 'newDocument'],
     ['Theme', 'toggleTheme'],

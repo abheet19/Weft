@@ -9,7 +9,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { DOC_ID_RE } from '@weft/protocol';
 import { newDocId } from './identity.ts';
-import { Shell } from './ui/Shell.tsx';
+import { App } from './ui/App.tsx';
 import './ui/tokens.css';
 import './ui/shell.css';
 
@@ -27,6 +27,6 @@ const root = document.getElementById('weft-app');
 if (root === null) throw new Error('index.html has no #weft-app root');
 createRoot(root).render(
   <StrictMode>
-    <Shell url={WS_URL} docId={docId} />
+    <App url={WS_URL} docId={docId} />
   </StrictMode>,
 );

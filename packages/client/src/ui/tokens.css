@@ -75,3 +75,15 @@
 /* Manual "Reduce transparency" (⌘K) — prefers-reduced-transparency is not Baseline yet */
 :root[data-flat="1"] .glass { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--raised); }
 :root[data-flat="1"] .blob { display: none }
+
+/* 1c. Accent choice (redesign, Settings › Appearance) — the ONE token an accent swap touches.
+   "cyan" is simply Weft's existing --accent (never redeclared here, so it needs no rule of its
+   own); "amber" is the sole alternative, at hue 75 — the same hue this file's --warn already uses,
+   so it never gets confused with a warning state, it just borrows its family. Lightness follows the
+   exact ladder --accent itself uses per ground (78% dark, 50% light), so amber clears the same
+   contrast ceilings cyan does; it is not a decorative override. */
+:root[data-accent="amber"] { --accent: oklch(78% 0.15 75); --on-accent: oklch(16% 0.012 250); }
+:root[data-theme="light"][data-accent="amber"] { --accent: oklch(50% 0.15 75); --on-accent: oklch(99% 0.005 250); }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"])[data-accent="amber"] { --accent: oklch(50% 0.15 75); --on-accent: oklch(99% 0.005 250); }
+}

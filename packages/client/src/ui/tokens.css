@@ -1,89 +1,104 @@
-/* tokens.css — 03-UI.md §2.2, copied verbatim from docs/prototype/weft.html section 1 (the
-   prototype expands the "same as light block" comment of §2.2 into the actual light values) plus
-   the prototype-only additions of section 1b, which the build keeps: --gl-inner is the ≥60%-alpha
-   inner fill every text label inside glass sits on (§2.1). One change, marked below: --proto-h (the
-   prototype scene bar height) is not ported because the scene bar is not part of the product.
+/* tokens.css — 03-UI §2.2. The redesign RE-SKIN (branch redesign-glass): the token VALUES below are
+   retuned to the shipped design artifact — a near-black hex ground with Fraunces (display) + Manrope
+   (body) + JetBrains Mono — while the structure of this file is unchanged. This is still an OVERRIDE,
+   not a rebuild: every custom property glass's base grammar also defines is redeclared here, later in
+   the cascade at equal specificity, so Weft's values win; the vendor @import is NEVER ripped out,
+   because the Fly.io Dockerfile builds from this repo alone.
 
-   REAL DEPENDENCY: @abheet19/glass (https://github.com/abheet19/glass). ./vendor/glass-base.css
-   is a committed, generated copy of glass's src/tokens.css — see tools/sync-glass.mjs at the repo
-   root for how it's produced and kept current; a live npm/file: link isn't usable here because the
-   Fly.io Dockerfile builds from this repo alone, with no sibling directory in the build context.
-
-   This is an override, not a redesign: every custom property below that glass's base grammar also
-   defines (--r-1/2/3, --ease, --t-fast/base/slow, --gl-blur/edge/fill/spec/shadow, --ink/-2/-3,
-   --bg/--raised/--line, --fs-0/1/2, --font-ui/mono, --accent, --ok/--warn/--bad) is redeclared in
-   this file's own :root block below, which — later in the cascade at equal specificity — wins.
-   Weft's own oklch(78% 0.14 200) teal/indigo pair and every other value here is therefore
-   completely unchanged by the import; it only adds tokens Weft doesn't already define. */
+   REAL DEPENDENCY: @abheet19/glass (https://github.com/abheet19/glass). ./vendor/glass-base.css is a
+   committed, generated copy of glass's src/tokens.css — see tools/sync-glass.mjs at the repo root for
+   how it's produced and kept current; a live npm/file: link isn't usable here because the Fly.io
+   Dockerfile builds from this repo alone, with no sibling directory in the build context. */
 @import "./vendor/glass-base.css";
 
 :root {
-  /* ground & surfaces */
-  --bg:        oklch(15% 0.012 250);   /* dark navy-grey, never pure black */
-  --paper:     oklch(20% 0.010 250);   /* editor page */
-  --raised:    oklch(25% 0.010 250);   /* panels */
-  --line:      oklch(32% 0.012 250);
-  --ink:       oklch(94% 0.008 90);    /* warm off-white text */
-  --ink-2:     oklch(72% 0.010 250);
-  --ink-3:     oklch(56% 0.012 250);
+  /* ground & surfaces — near-black teal-tinted hex ground (artifact §tokens) */
+  --bg:        #05090a;   /* the page ground; never pure black */
+  --paper:     #0b1315;   /* editor page / opaque menus */
+  --raised:    #121a1c;   /* panels & cards (artifact --surface-solid) */
+  --line:      rgba(255,255,255,.09);
+  --ink:       #eaf3f2;   /* body text */
+  --ink-2:     #93a6a5;   /* secondary text */
+  --ink-3:     #5c7071;   /* watermarks, hairline glyphs, disabled */
 
-  /* one accent, plus the four state hues */
-  --accent:    oklch(78% 0.14 200);    /* teal */
-  --ok:        oklch(76% 0.15 150);    /* saved */
-  --sync:      oklch(76% 0.12 240);    /* syncing */
-  --warn:      oklch(80% 0.15 75);     /* offline / reconnecting */
-  --bad:       oklch(70% 0.19 25);     /* divergence / error */
+  /* one accent, plus the four state hues (artifact teal + amber/success/danger) */
+  --accent:    #34e0cf;   /* teal */
+  --accent-2:  #f0b64d;   /* secondary / amber */
+  --on-accent: #032420;   /* ink on a filled accent */
+  --on-hue:    #032420;   /* ink on a filled hue (switch thumb, primary btn, avatar) */
+  --ok:        #3ddc8d;   /* saved */
+  --sync:      #6cc6f0;   /* syncing */
+  --warn:      #f0b64d;   /* offline / reconnecting */
+  --bad:       #f0725f;   /* divergence / error */
 
-  /* glass */
-  --gl-fill:   oklch(22% 0.012 250 / .55);
-  --gl-edge:   oklch(100% 0 0 / .12);
-  --gl-spec:   oklch(100% 0 0 / .32);
-  --gl-blur:   blur(14px) saturate(1.4);
-  --gl-shadow: inset 0 1px 0 var(--gl-spec), 0 10px 30px -12px oklch(0% 0 0 / .6);
+  /* glass (artifact §tokens: rgba tint, blur(18px) saturate(150%)) */
+  --gl-fill:   rgba(24,31,34,.60);
+  --gl-edge:   rgba(255,255,255,.10);
+  --gl-spec:   rgba(255,255,255,.20);
+  --gl-blur:   blur(18px) saturate(1.5);
+  --gl-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 22px 50px -22px rgba(0,0,0,.65);
+  --gl-inner:  rgba(16,22,24,.72);
+  --shadow:    0 22px 50px -22px rgba(0,0,0,.65);
+  --shadow-lg: 0 40px 90px -28px rgba(0,0,0,.72);
+  --shadow-2:  0 20px 44px -20px rgba(0,0,0,.55);
 
-  /* presence palette: 8 hues, equal L/C, 45° apart — assigned by replica id */
+  /* presence palette: 8 hues, equal L/C, 45° apart — assigned by replica id (03-UI §2.2) */
   --p0: oklch(75% 0.16 20);  --p1: oklch(75% 0.16 65);  --p2: oklch(75% 0.16 110); --p3: oklch(75% 0.16 155);
   --p4: oklch(75% 0.16 200); --p5: oklch(75% 0.16 245); --p6: oklch(75% 0.16 290); --p7: oklch(75% 0.16 335);
 
-  /* type */
-  --font-ui:   "Geist", "Inter", system-ui, sans-serif;
-  --font-doc:  "Newsreader", Georgia, serif;          /* the editor body: reads like a page */
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  /* type — Fraunces (display) / Manrope (body & UI) / JetBrains Mono (artifact §tokens) */
+  --font-ui:      "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-doc:     "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;  /* the editor BODY reads as sans (artifact) */
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;                                 /* headings, blockquote, title */
+  --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --fs-0: clamp(.8rem, .78rem + .1vw, .875rem);  --fs-1: clamp(.9rem, .85rem + .2vw, 1rem);
-  --fs-2: clamp(1.05rem, 1rem + .3vw, 1.2rem);   --fs-doc: clamp(1.05rem, 1rem + .35vw, 1.25rem);
+  --fs-2: clamp(1.05rem, 1rem + .3vw, 1.2rem);   --fs-doc: clamp(1rem, .96rem + .28vw, 1.12rem);
 
-  /* radius, motion */
-  --r-1: 8px; --r-2: 12px; --r-3: 18px; --r-pill: 999px;
+  /* radius, motion (artifact --r-l/m/s → --r-3/2/1) */
+  --r-1: 8px; --r-2: 13px; --r-3: 20px; --r-pill: 999px;
   --t-fast: 120ms; --t-base: 220ms; --t-slow: 400ms;
   --ease: cubic-bezier(.2,.8,.2,1);
 }
-:root[data-theme="light"] { --bg: oklch(97% 0.006 90); --paper: oklch(99.5% 0.003 90); --raised: oklch(96% 0.006 90);
-  --line: oklch(88% 0.008 90); --ink: oklch(20% 0.01 250); --ink-2: oklch(42% 0.01 250); --ink-3: oklch(58% 0.01 250);
-  --gl-fill: oklch(100% 0 0 / .55); --gl-edge: oklch(20% 0.01 250 / .10); --gl-spec: oklch(100% 0 0 / .9); }
-@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg: oklch(97% 0.006 90); --paper: oklch(99.5% 0.003 90); --raised: oklch(96% 0.006 90);
-  --line: oklch(88% 0.008 90); --ink: oklch(20% 0.01 250); --ink-2: oklch(42% 0.01 250); --ink-3: oklch(58% 0.01 250);
-  --gl-fill: oklch(100% 0 0 / .55); --gl-edge: oklch(20% 0.01 250 / .10); --gl-spec: oklch(100% 0 0 / .9); } }
+:root[data-theme="light"] {
+  --bg: #eef3f1; --paper: #ffffff; --raised: #f6faf8; --line: rgba(8,22,20,.11);
+  --ink: #0d1615; --ink-2: #4c5d5b; --ink-3: #7d8f8d;
+  --accent: #0a8f8a; --accent-2: #8f640f; --on-accent: #ffffff; --on-hue: #ffffff;
+  --ok: #147a4f; --sync: #2b6fd6; --warn: #8f640f; --bad: #ad3a2c;
+  --gl-fill: rgba(255,255,255,.72); --gl-edge: rgba(8,22,20,.11); --gl-spec: rgba(255,255,255,.9);
+  --gl-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 18px 40px -26px rgba(20,40,38,.28);
+  --gl-inner: rgba(255,255,255,.8);
+  --shadow: 0 18px 40px -26px rgba(20,40,38,.28); --shadow-lg: 0 28px 65px -28px rgba(20,40,38,.32);
+  --shadow-2: 0 16px 36px -20px rgba(20,40,38,.24);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #eef3f1; --paper: #ffffff; --raised: #f6faf8; --line: rgba(8,22,20,.11);
+    --ink: #0d1615; --ink-2: #4c5d5b; --ink-3: #7d8f8d;
+    --accent: #0a8f8a; --accent-2: #8f640f; --on-accent: #ffffff; --on-hue: #ffffff;
+    --ok: #147a4f; --sync: #2b6fd6; --warn: #8f640f; --bad: #ad3a2c;
+    --gl-fill: rgba(255,255,255,.72); --gl-edge: rgba(8,22,20,.11); --gl-spec: rgba(255,255,255,.9);
+    --gl-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 18px 40px -26px rgba(20,40,38,.28);
+    --gl-inner: rgba(255,255,255,.8);
+    --shadow: 0 18px 40px -26px rgba(20,40,38,.28); --shadow-lg: 0 28px 65px -28px rgba(20,40,38,.32);
+    --shadow-2: 0 16px 36px -20px rgba(20,40,38,.24);
+  }
+}
 @supports not (backdrop-filter: blur(1px)) { .glass { background: var(--raised) } }
 @media (prefers-reduced-transparency: reduce) { .glass { backdrop-filter: none; background: var(--raised) } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition-duration: 0ms !important } }
 
-/* 1b. Prototype-only additions (not in the spec; the build may keep them).
-   --gl-inner is the >=60%-alpha inner fill every text label inside glass sits on (§2.1). */
-:root { --gl-inner: oklch(19% 0.012 250 / .68); --on-hue: oklch(15% 0.02 250);
-        --top-h: 52px; --rail-w: 328px; color-scheme: dark; } /* --proto-h dropped: no prototype scene bar in the product */
-:root[data-theme="light"] { --gl-inner: oklch(100% 0 0 / .74); color-scheme: light; }
+/* 1b. Prototype-only additions (kept): --gl-inner is the inner fill every text label inside glass
+   sits on (§2.1). --top-h / --rail-w are the shell's own metrics; color-scheme drives form controls. */
+:root { --top-h: 52px; --rail-w: 328px; color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
 /* Manual "Reduce transparency" (⌘K) — prefers-reduced-transparency is not Baseline yet */
 :root[data-flat="1"] .glass { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--raised); }
 :root[data-flat="1"] .blob { display: none }
 
-/* 1c. Accent choice (redesign, Settings › Appearance) — the ONE token an accent swap touches.
-   "cyan" is simply Weft's existing --accent (never redeclared here, so it needs no rule of its
-   own); "amber" is the sole alternative, at hue 75 — the same hue this file's --warn already uses,
-   so it never gets confused with a warning state, it just borrows its family. Lightness follows the
-   exact ladder --accent itself uses per ground (78% dark, 50% light), so amber clears the same
-   contrast ceilings cyan does; it is not a decorative override. */
-:root[data-accent="amber"] { --accent: oklch(78% 0.15 75); --on-accent: oklch(16% 0.012 250); }
-:root[data-theme="light"][data-accent="amber"] { --accent: oklch(50% 0.15 75); --on-accent: oklch(99% 0.005 250); }
+/* 1c. Accent choice (Settings › Appearance) — the ONE token an accent swap touches. "cyan" is Weft's
+   own --accent (teal, never redeclared here, so needs no rule); "amber" is the sole alternative. */
+:root[data-accent="amber"] { --accent: #f0b64d; --on-accent: #2b1a00; --on-hue: #2b1a00; }
+:root[data-theme="light"][data-accent="amber"] { --accent: #8f640f; --on-accent: #ffffff; --on-hue: #ffffff; }
 @media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"])[data-accent="amber"] { --accent: oklch(50% 0.15 75); --on-accent: oklch(99% 0.005 250); }
+  :root:not([data-theme="dark"])[data-accent="amber"] { --accent: #8f640f; --on-accent: #ffffff; --on-hue: #ffffff; }
 }

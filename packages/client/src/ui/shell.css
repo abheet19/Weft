@@ -503,3 +503,113 @@ kbd { font: 500 11px/1 var(--font-mono); padding: 3px 5px; border-radius: 5px; b
 .history-restore .i { color: var(--ink-3); margin-top: 2px }
 .history-restore strong { display: block; font-size: 13px; color: var(--ink) }
 .history-restore p { font-size: 12px; color: var(--ink-2); margin-top: 2px }
+
+/* =====================================================================================
+   27. DESIGN-ARTIFACT RE-SKIN (redesign-glass) — the visual-language pass. These rules
+   come LAST in the cascade so they retune metrics, spacing, type and ornament to the
+   shipped design artifact (redesigns/weft.html) WITHOUT disturbing the structural rules
+   above (portal, sticky, carets, follow, the loading/empty/error state machine). Colours
+   and fonts already flow from tokens.css; this section is layout + decoration only.
+   ===================================================================================== */
+
+/* ---- 27.1 Display serif (Fraunces) for every real heading, per the artifact ---- */
+.screenpage-h { font-family: var(--font-display); font-weight: 600; letter-spacing: -.012em }
+.docs-empty h2, .history-preview .panel-h h2 { font-family: var(--font-display) }
+.doc h1, .doc h2, .doc h3 { font-family: var(--font-display); font-weight: 600; letter-spacing: -.01em }
+.doc blockquote { font-family: var(--font-display); border-left-width: 3px }
+
+/* ---- 27.2 App shell + nav rail — 84px column, 44px brand, foot utilities ---- */
+.navrail { width: 84px; padding: 16px 0 14px; gap: 6px }
+.navrail-brand { width: 44px; height: 44px; border-radius: 12px; margin-bottom: 14px;
+  background: linear-gradient(155deg, color-mix(in oklch, var(--accent) 22%, var(--raised)), var(--raised));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08) }
+.navrail-brand img { width: 22px; height: 22px }
+.navrail-btn { width: 64px; gap: 5px; padding: 9px 4px 8px; font-size: 10.5px; letter-spacing: .02em; border: 1px solid transparent }
+.navrail-btn .i { width: 19px; height: 19px }
+.navrail-btn.on { border-color: color-mix(in oklch, var(--accent) 30%, transparent) }
+.navrail-foot { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100% }
+.navrail-mini { width: 64px; display: inline-flex; align-items: center; justify-content: center; padding: 7px; border-radius: 10px;
+  border: 1px solid transparent; color: var(--ink-3); transition: background var(--t-fast), color var(--t-fast) }
+.navrail-mini .i { width: 17px; height: 17px }
+.navrail-mini:hover { background: var(--raised); color: var(--ink-2) }
+.navrail-cmdk { width: 64px; display: inline-flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px;
+  border: 1px dashed var(--gl-edge); border-radius: 12px; color: var(--ink-3); font-size: 9.5px; font-weight: 600;
+  transition: color var(--t-fast), border-color var(--t-fast) }
+.navrail-cmdk kbd { font-family: var(--font-mono); font-size: 11px; background: var(--gl-inner); border: 1px solid var(--gl-edge);
+  border-radius: 5px; padding: 1px 5px; color: var(--ink-2) }
+.navrail-cmdk:hover { color: var(--ink-2); border-color: var(--accent) }
+.pill { left: 104px }
+@media (max-width: 640px) {
+  .navrail-foot { display: none }  /* the phone bottom bar is just the four destinations */
+  .pill { left: 20px }
+}
+
+/* ---- 27.3 Top bar — back control + editable-looking title field (editor) ---- */
+.topbar { gap: 10px }
+.topbar .back { padding: 0 10px 0 8px; font-weight: 600; color: var(--ink-2) }
+.topbar .back .i { width: 15px; height: 15px }
+.topbar .back:hover { color: var(--ink) }
+.title.titlefield { flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px;
+  height: auto; padding: 4px 8px; border-radius: var(--r-1); background: none; border: 0; cursor: text; text-align: left }
+.title.titlefield:hover { background: var(--gl-inner) }
+.title.titlefield #title { display: block; font-family: var(--font-display); font-weight: 600; font-size: 1.05rem;
+  line-height: 1.2; color: var(--ink); max-width: 42vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.title.titlefield .docid { font-size: 11px; color: var(--ink-3) }
+
+/* ---- 27.4 Editor page — the artifact's borderless centred column on the ambient ground ----
+   The prototype's opaque "paper" card becomes a plain column: the document sits directly on the
+   drifting L0 ground, exactly as the artifact draws it. History's preview keeps a real card (27.9). */
+.page { max-width: calc(640px + 112px); padding: 40px 56px 96px; min-height: 60vh;
+  background: transparent; border: 0; box-shadow: none }
+.toolbar-host { max-width: calc(640px + 112px) }
+.toolbar-host.toolbar-loading.glass { background: var(--gl-fill) }
+.notice { max-width: calc(640px + 112px) }
+.page[data-mode="empty"] .ghost { top: 40px; left: 56px; right: 56px }
+.doc { font-variant-numeric: normal }
+.pagefoot { justify-content: center; margin-top: 22px }
+@media (max-width: 640px) {
+  .page { padding: 32px 20px 80px }
+  .page[data-mode="empty"] .ghost { top: 32px; left: 20px; right: 20px }
+}
+
+/* ---- 27.5 Buttons — compact ghost default, prominent glowing primary (artifact) ---- */
+.btn { height: 32px; padding: 0 13px; border-radius: var(--r-1); font-size: 13px; font-weight: 600;
+  background: var(--gl-inner); border-color: var(--gl-edge) }
+.btn:hover { background: color-mix(in oklch, var(--gl-inner), var(--ink) 8%); border-color: var(--ink-3) }
+.btn.primary { height: 38px; padding: 0 16px; border-radius: 11px; font-size: .86rem; font-weight: 700;
+  box-shadow: 0 10px 24px -12px color-mix(in oklch, var(--accent) 60%, transparent) }
+.btn.primary .i { width: 15px; height: 15px }
+
+/* ---- 27.6 Documents — toolbar, glass empty state, and the lifting doc cards ---- */
+.docs-search { border-radius: var(--r-2); padding: 10px 13px }
+.docs-empty { border-radius: var(--r-3); padding: 56px 32px; gap: 14px;
+  background: var(--gl-fill); -webkit-backdrop-filter: var(--gl-blur); backdrop-filter: var(--gl-blur);
+  border: 1px solid var(--gl-edge); box-shadow: var(--gl-shadow) }
+.docs-empty .i { width: 38px; height: 38px }
+.docs-empty h2 { font-size: 1.15rem }
+.docs-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px }
+.doc-card { border-radius: var(--r-3); padding: 18px 18px 16px; gap: 12px; overflow: hidden }
+.doc-card::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity var(--t-base);
+  background: linear-gradient(160deg, color-mix(in oklch, var(--accent) 7%, transparent), transparent 55%) }
+.doc-card:hover { transform: translateY(-3px); border-color: var(--ink-3) }
+.doc-card:hover::before { opacity: 1 }
+.doc-card-icon { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center;
+  background: var(--gl-inner); color: var(--accent); flex: none }
+.doc-card-icon .i { width: 16px; height: 16px }
+.doc-card h3 { font-size: 1rem; font-weight: 700; padding-right: 24px }
+.doc-card-meta { font-size: 12px }
+.doc-card-foot { padding-top: 10px; font-size: 12px }
+
+/* ---- 27.7 Command palette — deeper scrim blur, rounder pane ---- */
+.cmdk { border-radius: var(--r-3) }
+.cmdk::backdrop { -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px) }
+
+/* ---- 27.8 Presence + right sidebar — small polish to match the artifact ---- */
+.pres-label { font-size: 12px }
+.railtab { font-weight: 600 }
+.syncbig { border-radius: var(--r-2) }
+
+/* ---- 27.9 History — the preview is a real glass card floating on the ground ---- */
+.history-preview .page.history-page { background: var(--raised); border: 1px solid var(--line);
+  border-radius: var(--r-2); box-shadow: none; padding: 32px 40px; min-height: 240px }
+.history-preview .page.history-page .doc { font-variant-numeric: normal }

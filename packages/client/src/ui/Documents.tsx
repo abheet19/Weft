@@ -104,6 +104,9 @@ export function Documents(): React.JSX.Element {
               <button type="button" className="doc-card-forget" aria-label={`Forget ${d.title}`} onClick={(e) => onForget(d, e)}>
                 <Icon name="x" />
               </button>
+              <span className="doc-card-icon" aria-hidden="true">
+                <Icon name="outline" />
+              </span>
               <h3>{d.title}</h3>
               <div className="doc-card-meta">
                 <span>

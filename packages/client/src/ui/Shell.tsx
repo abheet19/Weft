@@ -46,7 +46,7 @@ import { touchRecent } from './recents.ts';
 import { Sidebar, type OutlineItem } from './Sidebar.tsx';
 import { SettingsScreen } from './SettingsScreen.tsx';
 import { StatusPill } from './StatusPill.tsx';
-import { readUiPrefs, writeUiPrefs, type Accent, type ThemeChoice } from './uiPrefs.ts';
+import type { Accent, ThemeChoice } from './uiPrefs.ts';
 import { useSession } from './useSession.ts';
 
 interface ShellProps {
@@ -57,6 +57,15 @@ interface ShellProps {
   screen?: Screen;
   /** Lets a control inside Shell (the ⌘K "Navigate" group) ask App to switch screens. A no-op default so Shell keeps working when mounted standalone, as the test suite does. */
   onNavigate?: (screen: Screen) => void;
+  /** The per-device look choices, now OWNED BY APP (App.tsx) so the nav rail's theme toggle — mounted
+      on every screen, including Documents where Shell is not — shares one source of truth with Shell's
+      Settings and ⌘K. App applies the `data-*` flags and persists them; Shell only reads and sets. */
+  theme: ThemeChoice;
+  flat: boolean;
+  accent: Accent;
+  onTheme: (theme: ThemeChoice) => void;
+  onFlat: (flat: boolean) => void;
+  onAccent: (accent: Accent) => void;
 }
 
 /** A fault in one sentence for the notice; the full structure goes to the console. */
@@ -77,7 +86,7 @@ function divergenceReport(docId: string, diverged: ReadonlyMap<ReplicaId, { peer
   return `Weft divergence report\ndoc ${docId}\n${lines.join('\n')}`;
 }
 
-export function Shell({ url, docId, screen = 'editor', onNavigate }: ShellProps): React.JSX.Element {
+export function Shell({ url, docId, screen = 'editor', onNavigate, theme, flat, accent, onTheme, onFlat, onAccent }: ShellProps): React.JSX.Element {
   const [attempt, setAttempt] = useState(0);
   const [notices, setNotices] = useState<readonly NoticeModel[]>([]);
   const [railOpen, setRailOpen] = useState(true);
@@ -86,10 +95,8 @@ export function Shell({ url, docId, screen = 'editor', onNavigate }: ShellProps)
   /** The time-travel slider position; null when live (not scrubbing). While scrubbing the page is read-only (03-UI §4.6). */
   const [historyPos, setHistoryPos] = useState<number | null>(null);
   const [showAuthors, setShowAuthors] = useState(false);
-  /** The redesign's persisted look (theme/flat/accent), read once and kept in sync with localStorage on every change — see `uiPrefs.ts`. */
+  /** The recents registry lives here (`recents.ts`); the look prefs (theme/flat/accent) are owned by App now. */
   const storage = useRef(safeLocalStorage());
-  const [uiPrefs, setUiPrefs] = useState(() => readUiPrefs(storage.current));
-  const { theme, flat, accent } = uiPrefs;
   const [nameOverride, setNameOverride] = useState<string | null>(null);
   /** The document's own derived title (`docTitle.ts`) — never stored, re-read from the live editor on every change. */
   const [title, setTitle] = useState<string | null>(null);
@@ -98,21 +105,11 @@ export function Shell({ url, docId, screen = 'editor', onNavigate }: ShellProps)
       paper, so the toolbar is a bar ABOVE the document rather than content floating inside it. Editor
       still owns the live `view`/`state` the toolbar needs; only its DOM position moves. */
   const [toolbarSlot, setToolbarSlot] = useState<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (theme !== null) document.documentElement.dataset.theme = theme;
-    else delete document.documentElement.dataset.theme;
-  }, [theme]);
-  useEffect(() => {
-    if (flat) document.documentElement.dataset.flat = '1';
-    else delete document.documentElement.dataset.flat;
-  }, [flat]);
-  useEffect(() => {
-    document.documentElement.dataset.accent = accent;
-  }, [accent]);
-  useEffect(() => writeUiPrefs(storage.current, uiPrefs), [uiPrefs]);
-  const setTheme = useCallback((next: ThemeChoice) => setUiPrefs((p) => ({ ...p, theme: next })), []);
-  const setFlat = useCallback((next: boolean) => setUiPrefs((p) => ({ ...p, flat: next })), []);
-  const setAccent = useCallback((next: Accent) => setUiPrefs((p) => ({ ...p, accent: next })), []);
+  // App (App.tsx) owns applying the data-* flags and persisting these; Shell just forwards the setters
+  // to Settings and the ⌘K palette under the names those call sites already use.
+  const setTheme = onTheme;
+  const setFlat = onFlat;
+  const setAccent = onAccent;
   /** One notice per id: a newer answer replaces the older question. */
   const show = useCallback((notice: NoticeModel) => setNotices((was) => [...was.filter((n) => n.id !== notice.id), notice]), []);
   const dismiss = useCallback((id: string) => setNotices((was) => was.filter((n) => n.id !== id)), []);
@@ -177,6 +174,14 @@ export function Shell({ url, docId, screen = 'editor', onNavigate }: ShellProps)
     ready.session.runner.dismissDivergence();
   };
   const goto = useCallback((next: Screen) => onNavigate?.(next), [onNavigate]);
+  /** Editing the title is renaming the document's first heading — Weft has no separate title op (the
+      artifact's editable title, given honest semantics). Clicking the title field focuses it. */
+  const focusTitle = useCallback(() => {
+    const view = viewRef.current;
+    if (view === null) return;
+    view.dispatch(view.state.tr.setSelection(Selection.atStart(view.state.doc)).scrollIntoView());
+    view.focus();
+  }, []);
 
   // The ⌘K palette's rows (03-UI §4.8), built once the session is ready so every value (theme, name,
   // On/Off, the state vector to copy) is current. Every leaf is a control that already exists here.
@@ -227,16 +232,30 @@ export function Shell({ url, docId, screen = 'editor', onNavigate }: ShellProps)
 
   const topbar = (
     <header className="topbar glass">
-      <a className="brand inner" href="/" aria-label="Weft home">
-        <img className="brand-mark" src="/brand/mark.svg" alt="" />
-        <span>Weft</span>
-      </a>
-      <div className="title inner">
-        <span id="title">{title !== null && title.trim() !== '' ? title : 'Weft'}</span>
-        <span className="docid mono" title="document id">
-          {docId}
-        </span>
-      </div>
+      {onNavigate !== undefined ? (
+        <button type="button" className="gbtn back" onClick={() => goto('documents')} aria-label="Back to Documents">
+          <Icon name="chevl" />
+          <span>Documents</span>
+        </button>
+      ) : (
+        <a className="brand inner" href="/" aria-label="Weft home">
+          <img className="brand-mark" src="/brand/mark.svg" alt="" />
+          <span>Weft</span>
+        </a>
+      )}
+      {screen === 'editor' && ready !== null ? (
+        <button type="button" className="title titlefield" onClick={focusTitle} title="Edit the document title (its first heading)">
+          <span id="title">{title !== null && title.trim() !== '' ? title : 'Untitled'}</span>
+          <span className="docid mono">{docId}</span>
+        </button>
+      ) : (
+        <div className="title inner">
+          <span id="title">{title !== null && title.trim() !== '' ? title : 'Weft'}</span>
+          <span className="docid mono" title="document id">
+            {docId}
+          </span>
+        </div>
+      )}
       <span className="grow" />
       {self !== null && ready !== null && <Presence self={self} peers={ready.snapshot.peers} connected={connected} follow={follow} onFollow={onFollow} />}
       {commands !== null && <CommandPalette commands={commands} />}

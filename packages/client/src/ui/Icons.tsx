@@ -73,6 +73,9 @@ export function IconSprite(): React.JSX.Element {
         <circle cx="12" cy="12" r="4" />
         <path d="M12 2.5V5M12 19v2.5M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M2.5 12H5M19 12h2.5M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8" />
       </symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24">
+        <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" />
+      </symbol>
       <symbol id="i-layers" viewBox="0 0 24 24">
         <path d="m12 3 9 5-9 5-9-5 9-5zM3 13l9 5 9-5" />
       </symbol>
@@ -107,6 +110,9 @@ export function IconSprite(): React.JSX.Element {
       </symbol>
       <symbol id="i-chevr" viewBox="0 0 24 24">
         <path d="m9 6 6 6-6 6" />
+      </symbol>
+      <symbol id="i-chevl" viewBox="0 0 24 24">
+        <path d="m15 6-6 6 6 6" />
       </symbol>
       <symbol id="i-mark" viewBox="0 0 24 24">
         <path d="M4 20h16" />

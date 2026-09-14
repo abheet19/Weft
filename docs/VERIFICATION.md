@@ -25,7 +25,7 @@ The CRDT suite runs once with coverage and once without it; the repeated executi
 | Links | create, copy, open, edit, remove; unsafe create/edit rejected before CRDT dispatch while peers stay **Saved** |
 | Collaboration UI | presence stack/dialog, remote caret, follow/exit-follow, Outline jump, People and Sync tabs |
 | History | scrub to read-only history, author overlay, return to live editing |
-| Command palette | all 12 commands inventoried; filtering, keyboard navigation, Escape focus return, and every stateful action exercised |
+| Command palette | all 16 commands inventoried across Navigate, Document, Collaboration, History, and Debug; filtering, keyboard navigation, Escape focus return, and every stateful action exercised |
 | Diagnostics | state vector copy, simulated message drop/repair, delay switch, divergence tripwire/report, status details, notice action and dismiss |
 | Recovery states | empty document remains editable; a corrupt IndexedDB copy shows an alert; Retry reattempts; Start fresh opens a safe new document |
 | Responsive/accessibility | the complete direct-control flow runs at 1280 px and 320 px; primary controls stay usable; semantic names/roles, focus paths, reduced motion/transparency, and live status/alert copy are preserved |

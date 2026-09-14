@@ -18,7 +18,7 @@ The current release matrix expects 13 documentation checks, 613 distinct Vitest 
 1. Open `/d/<disposable-id>` in two independent browser contexts. Type in both and wait until their text is identical and both pills read **Saved**.
 2. In one context, open **Sync**, enable **Simulate offline**, and edit in both contexts. Confirm the offline pill counts local changes while the online peer remains Saved. Reconnect, confirm the merge notice, identical content, and both Saved.
 3. Exercise undo/redo, every mark, colour/reset, heading and block type, checklist tick, divider, and link create/copy/open/edit/remove. Try a `javascript:` or `data:` link and confirm it is rejected without changing shared state.
-4. Exercise Outline jump, People/presence/follow, Sync diagnostics, History scrub/authors/return-live, all 12 command-palette actions, message drop/delay, the divergence report, notice actions, and status details.
+4. Exercise Outline jump, People/presence/follow, Sync diagnostics, History scrub/authors/return-live, all 16 command-palette actions (including the four screen-navigation entries), message drop/delay, the divergence report, notice actions, and status details.
 5. Repeat the direct-control path at 320 px. Check keyboard focus, visible names, no trapped dialog, reduced-motion behaviour, and readable opaque content surfaces.
 6. Corrupt only a disposable browser database and verify the error card's **Retry** and **Start fresh** paths. Never do this with real content.
 

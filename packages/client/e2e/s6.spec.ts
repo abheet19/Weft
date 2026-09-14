@@ -8,7 +8,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { editor, open, pill } from './helpers.ts';
 
-const tb = (page: Page, name: string) => page.getByRole('button', { name });
+const tb = (page: Page, name: string) => page.getByRole('button', { name, exact: true });
 let n = 0;
 const freshId = (kind: string): string => `e2e-s6-${kind}-${Date.now().toString(36)}-${n++}`;
 

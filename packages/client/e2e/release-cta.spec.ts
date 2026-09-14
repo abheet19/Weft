@@ -312,9 +312,13 @@ for (const viewport of [
     await page.keyboard.press('Escape');
 
     const before = page.url();
-    await page.getByRole('link', { name: 'Weft home' }).click();
-    await expect(page).not.toHaveURL(before);
-    await expect(editor(page)).toBeVisible();
+    const home =
+      viewport.width <= 320
+        ? page.getByRole('button', { name: 'Back to Documents', exact: true })
+        : page.getByRole('link', { name: 'Weft (nav rail)', exact: true });
+    await home.click();
+    if (viewport.width > 320) await expect(page).not.toHaveURL(before);
+    await expect(page.getByRole('heading', { name: 'Documents', level: 1 })).toBeVisible();
   });
 }
 

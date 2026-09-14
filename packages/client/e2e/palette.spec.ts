@@ -33,7 +33,7 @@ test('F-palette: Esc closes the palette and returns focus to the trigger button'
   const docId = `e2e-palette-esc-${Date.now().toString(36)}`;
   await open(page, docId);
 
-  const button = page.getByRole('button', { name: 'Open command palette (Ctrl+K)' });
+  const button = page.getByRole('banner').getByRole('button', { name: 'Open command palette (Ctrl+K)' });
   await button.click();
   const dialog = page.getByRole('dialog', { name: 'Command palette' });
   await expect(dialog).toBeVisible();

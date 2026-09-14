@@ -79,9 +79,9 @@ try {
   await reconnectNotice.getByRole('button', { name: 'Dismiss' }).click();
   await check(reconnectNotice).toHaveCount(0);
 
-  await pageA.getByRole('button', { name: 'Open command palette (Ctrl+K)' }).click();
+  await pageA.getByRole('banner').getByRole('button', { name: 'Open command palette (Ctrl+K)' }).click();
   const palette = pageA.getByRole('dialog', { name: 'Command palette' });
-  await check(palette.getByRole('option')).toHaveCount(12);
+  await check(palette.getByRole('option')).toHaveCount(16);
   await pageA.keyboard.press('Escape');
   await check(palette).toBeHidden();
 
@@ -100,8 +100,8 @@ try {
     }),
   }));
   check(mobileLayout).toEqual({ pageOverflows: false, controlsInside: true });
-  await phone.getByRole('button', { name: 'Open command palette (Ctrl+K)' }).click();
-  await check(phone.getByRole('dialog', { name: 'Command palette' }).getByRole('option')).toHaveCount(12);
+  await phone.getByRole('banner').getByRole('button', { name: 'Open command palette (Ctrl+K)' }).click();
+  await check(phone.getByRole('dialog', { name: 'Command palette' }).getByRole('option')).toHaveCount(16);
   await phone.keyboard.press('Escape');
   await phone.getByRole('button', { name: 'Toggle sidebar' }).click();
   await check(phone.getByRole('tab', { name: 'Outline' })).toHaveCount(0);

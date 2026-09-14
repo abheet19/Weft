@@ -23,6 +23,9 @@ export type Screen = 'documents' | 'editor' | 'history' | 'settings';
 interface AppProps {
   url: string;
   docId: string;
+  /** Which screen to open on. The bare home ("/") lands on the Documents library
+      (the redesign artifact's entry); a /d/<id> deep-link opens straight to the editor. */
+  initialScreen?: Screen;
 }
 
 /** Opens the ⌘K palette (owned by Shell, mounted only off Documents) by dispatching the same global
@@ -31,8 +34,8 @@ function openPalette(): void {
   window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }));
 }
 
-export function App({ url, docId }: AppProps): React.JSX.Element {
-  const [screen, setScreen] = useState<Screen>('editor');
+export function App({ url, docId, initialScreen = 'documents' }: AppProps): React.JSX.Element {
+  const [screen, setScreen] = useState<Screen>(initialScreen);
   const storage = useRef(safeLocalStorage());
   const [uiPrefs, setUiPrefs] = useState(() => readUiPrefs(storage.current));
   const { theme, flat, accent } = uiPrefs;

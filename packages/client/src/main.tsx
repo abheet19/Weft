@@ -17,16 +17,18 @@ const WS_URL: string = import.meta.env.VITE_WEFT_WS ?? 'ws://127.0.0.1:4200';
 
 const match = /^\/d\/([^/]+)$/.exec(location.pathname);
 let docId = match?.[1];
+// A /d/<id> deep-link opens straight into that document's editor; the bare home
+// ("/") lands on the Documents library — the redesign artifact's entry screen.
+// A fresh doc id is still minted so the Editor tab / "New document" have one ready.
+const initialScreen: 'documents' | 'editor' = docId !== undefined && DOC_ID_RE.test(docId) ? 'editor' : 'documents';
 if (docId === undefined || !DOC_ID_RE.test(docId)) {
   docId = newDocId();
-  // Keep the fresh-document URL without paying for a second document navigation on first load.
-  history.replaceState(null, '', `/d/${docId}`);
 }
 
 const root = document.getElementById('weft-app');
 if (root === null) throw new Error('index.html has no #weft-app root');
 createRoot(root).render(
   <StrictMode>
-    <App url={WS_URL} docId={docId} />
+    <App url={WS_URL} docId={docId} initialScreen={initialScreen} />
   </StrictMode>,
 );

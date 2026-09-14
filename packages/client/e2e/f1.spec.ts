@@ -56,8 +56,11 @@ test('F1 open and type together: two windows on one document type at different p
   await Promise.all([a.close(), b.close()]);
 });
 
-test('/ redirects to a fresh document and the pill reads Saved once the relay has acknowledged the empty session', async ({ page }) => {
+test('/ opens the Documents library home; New document deep-links to /d/<id> and the pill reads Saved once the relay has acknowledged the empty session', async ({ page }) => {
   await page.goto(`${base()}/`);
+  // The redesign home is the Documents library (matches the design artifact), not a bare editor.
+  await expect(page.getByRole('heading', { name: 'Documents', level: 1 })).toBeVisible();
+  await page.getByRole('button', { name: 'New document' }).first().click();
   await expect(page).toHaveURL(/\/d\/[a-z0-9]{12}$/);
   await expect(pill(page)).toHaveText('Saved');
 });

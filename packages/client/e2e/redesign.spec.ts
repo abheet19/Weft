@@ -88,6 +88,14 @@ test('Documents: the empty state offers New document when nothing has been opene
   await expect(page.getByRole('button', { name: 'New document' }).first()).toBeVisible();
 });
 
+test('Documents: the rail Commands CTA opens the real palette', async ({ page }) => {
+  await page.goto(base());
+  await expect(page.getByRole('heading', { name: 'Documents', level: 1 })).toBeVisible();
+  await page.getByRole('button', { name: 'Open command palette (Ctrl+K)' }).click();
+  await expect(editor(page)).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Command palette' })).toBeVisible();
+});
+
 test('Settings: Appearance sets the same tokens the rest of the app reads, and it survives a reload', async ({ page }) => {
   const docId = fresh('settings');
   await open(page, docId);

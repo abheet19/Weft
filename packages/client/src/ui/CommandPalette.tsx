@@ -18,7 +18,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { filterCommands, type Command } from './commands.ts';
 import { Icon } from './Icons.tsx';
 
-export function CommandPalette({ commands }: { commands: readonly Command[] }): React.JSX.Element {
+export function CommandPalette({ commands, openRequest = 0 }: { commands: readonly Command[]; openRequest?: number }): React.JSX.Element {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   /** What had focus when the palette opened; focus returns here on a DISMISS (Esc / click-away), not when a command runs — a command owns where focus lands. */
@@ -43,6 +43,10 @@ export function CommandPalette({ commands }: { commands: readonly Command[] }): 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+
+  useEffect(() => {
+    if (openRequest > 0) setOpen(true);
+  }, [openRequest]);
 
   // Drive the real <dialog> from React state. showModal/close are guarded so jsdom (which has
   // neither) falls back to the `open` attribute the tests read; the browser gets the modal + backdrop.

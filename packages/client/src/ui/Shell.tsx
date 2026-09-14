@@ -57,6 +57,9 @@ interface ShellProps {
   screen?: Screen;
   /** Lets a control inside Shell (the ⌘K "Navigate" group) ask App to switch screens. A no-op default so Shell keeps working when mounted standalone, as the test suite does. */
   onNavigate?: (screen: Screen) => void;
+  /** Incremented by App when the always-visible rail requests the palette while Documents has
+      Shell unmounted. CommandPalette consumes it on mount after the live session is ready. */
+  paletteRequest?: number;
   /** The per-device look choices, now OWNED BY APP (App.tsx) so the nav rail's theme toggle — mounted
       on every screen, including Documents where Shell is not — shares one source of truth with Shell's
       Settings and ⌘K. App applies the `data-*` flags and persists them; Shell only reads and sets. */
@@ -86,7 +89,7 @@ function divergenceReport(docId: string, diverged: ReadonlyMap<ReplicaId, { peer
   return `Weft divergence report\ndoc ${docId}\n${lines.join('\n')}`;
 }
 
-export function Shell({ url, docId, screen = 'editor', onNavigate, theme, flat, accent, onTheme, onFlat, onAccent }: ShellProps): React.JSX.Element {
+export function Shell({ url, docId, screen = 'editor', onNavigate, paletteRequest = 0, theme, flat, accent, onTheme, onFlat, onAccent }: ShellProps): React.JSX.Element {
   const [attempt, setAttempt] = useState(0);
   const [notices, setNotices] = useState<readonly NoticeModel[]>([]);
   const [railOpen, setRailOpen] = useState(true);
@@ -268,7 +271,7 @@ export function Shell({ url, docId, screen = 'editor', onNavigate, theme, flat, 
       )}
       <span className="grow" />
       {self !== null && ready !== null && <Presence self={self} peers={ready.snapshot.peers} connected={connected} follow={follow} onFollow={onFollow} />}
-      {commands !== null && <CommandPalette commands={commands} />}
+      {commands !== null && <CommandPalette commands={commands} openRequest={paletteRequest} />}
       {screen === 'editor' && (
         <button type="button" className="gbtn icon" aria-label="Toggle sidebar" aria-expanded={railOpen} onClick={() => setRailOpen((was) => !was)}>
           <Icon name="panel" />

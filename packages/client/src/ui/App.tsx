@@ -36,6 +36,7 @@ function openPalette(): void {
 
 export function App({ url, docId, initialScreen = 'documents' }: AppProps): React.JSX.Element {
   const [screen, setScreen] = useState<Screen>(initialScreen);
+  const [paletteRequest, setPaletteRequest] = useState(0);
   const storage = useRef(safeLocalStorage());
   const [uiPrefs, setUiPrefs] = useState(() => readUiPrefs(storage.current));
   const { theme, flat, accent } = uiPrefs;
@@ -54,16 +55,27 @@ export function App({ url, docId, initialScreen = 'documents' }: AppProps): Reac
   const setTheme = useCallback((next: ThemeChoice) => setUiPrefs((p) => ({ ...p, theme: next })), []);
   const setFlat = useCallback((next: boolean) => setUiPrefs((p) => ({ ...p, flat: next })), []);
   const setAccent = useCallback((next: Accent) => setUiPrefs((p) => ({ ...p, accent: next })), []);
+  const handleCommands = useCallback(() => {
+    if (screen === 'documents') {
+      // Documents deliberately unmounts the live session and its palette. Move to the
+      // editor first, then open the palette once Shell has mounted; the rail CTA must
+      // never look clickable while dispatching an event nobody can receive.
+      setPaletteRequest((n) => n + 1);
+      setScreen('editor');
+      return;
+    }
+    openPalette();
+  }, [screen]);
 
   return (
     <div className="appshell">
       <IconSprite />
-      <NavRail active={screen} onSelect={setScreen} theme={theme} onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')} onCommands={openPalette} />
+      <NavRail active={screen} onSelect={setScreen} theme={theme} onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')} onCommands={handleCommands} />
       <div className="appstage">
         {screen === 'documents' ? (
           <Documents />
         ) : (
-          <Shell url={url} docId={docId} screen={screen} onNavigate={setScreen} theme={theme} flat={flat} accent={accent} onTheme={setTheme} onFlat={setFlat} onAccent={setAccent} />
+          <Shell url={url} docId={docId} screen={screen} onNavigate={setScreen} paletteRequest={paletteRequest} theme={theme} flat={flat} accent={accent} onTheme={setTheme} onFlat={setFlat} onAccent={setAccent} />
         )}
       </div>
     </div>

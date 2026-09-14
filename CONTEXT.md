@@ -177,3 +177,175 @@ Use `docs/SANITY.md` in the repository, or `09_SANITY_CHECK.md` in the Study Pac
 3. Preserve truthful save labels and add failure-path tests for persistence/acknowledgement changes.
 4. Change editor binding and CRDT semantics with focused unit/property tests and user-visible paths with Playwright.
 5. Keep base/live/candidate evidence separate; do not commit, push, or deploy without authorization.
+
+## Annotated core code + knowledge graph
+
+> This section grounds every claim above in the real `packages/crdt/src` source on the redesign-glass branch. It maps the modules, then quotes the three excerpts that carry the whole algorithm — character identity, the Fugue insert-between + integrate, and the state-vector reconnect — verbatim, with a line-by-line walkthrough and the interview question each one invites. Everything below names real files and functions; nothing is invented.
+
+### Knowledge graph / structure summary
+
+`packages/crdt` is the pure convergence engine — no I/O, no clock, no ProseMirror, no network. A local keystroke and a remote op reach the same `apply(doc, op)`; that single function is where convergence (invariant **I1**) lives. Data flows one way: **intent → ops → `apply` → a new immutable `Doc`**, and reads (`traverse`, `canonical`) never mutate.
+
+```mermaid
+flowchart TD
+    subgraph intent["Intent to ops"]
+        LOCAL["local.ts<br/>fuguePlace, localInsert/Delete/Format/SetBlock"]
+    end
+    subgraph engine["Convergence engine"]
+        APPLY["apply.ts — THE function<br/>refuse, seq-gap, park, integrate, drain, LWW wins"]
+        DOC["doc.ts<br/>Doc state, childrenOf, pending drop"]
+    end
+    subgraph identity["Identity and data shapes"]
+        IDS["ids.ts<br/>ItemId, compareIds, idKey"]
+        ITEM["item.ts<br/>Item, ROOT, MarkState, validators"]
+        OPS["ops.ts<br/>4 ops, opDependencies"]
+    end
+    subgraph structures["Ordered structures"]
+        SIB["siblings.ts<br/>chunked sorted sibling lists"]
+        TRAV["traverse.ts<br/>traversalOrder, PositionIndex (Fenwick), nextInTraversal"]
+        PMAP["persistentMap.ts<br/>immutable structural-sharing map"]
+    end
+    subgraph sync["Sync and durability"]
+        SV["stateVector.ts<br/>svDiff, svMerge, opsSince, OpLog"]
+        CANON["canonical.ts<br/>canonical bytes / content hash"]
+        SNAP["snapshot.ts<br/>encode / decode Doc"]
+    end
+
+    LOCAL -->|"neighbours from"| TRAV
+    LOCAL -->|"emits Op, routes through"| APPLY
+    APPLY -->|"refuse + validate shapes"| ITEM
+    APPLY -->|"seq / idempotence read+write"| SV
+    APPLY -->|"causal deps"| OPS
+    APPLY -->|"sibling insert, sorted by"| SIB
+    SIB -->|"total order"| IDS
+    APPLY -->|"structural sharing"| PMAP
+    APPLY -->|"returns new"| DOC
+    DOC --> TRAV
+    TRAV --> CANON
+    SNAP -.->|"rebuild"| DOC
+    SV -->|"opsSince = catch-up payload"| APPLY
+
+    classDef engineCls fill:#7c3aed,stroke:#4c1d95,color:#fff;
+    classDef idCls fill:#0e7490,stroke:#083344,color:#fff;
+    classDef structCls fill:#b45309,stroke:#78350f,color:#fff;
+    classDef syncCls fill:#15803d,stroke:#14532d,color:#fff;
+    classDef intentCls fill:#be123c,stroke:#881337,color:#fff;
+    class APPLY,DOC engineCls;
+    class IDS,ITEM,OPS idCls;
+    class SIB,TRAV,PMAP structCls;
+    class SV,CANON,SNAP syncCls;
+    class LOCAL intentCls;
+```
+
+**One line per file that matters (`packages/crdt/src`):**
+
+- `ids.ts` — Character/replica identity. `ItemId = {replica, seq}`, the single total order `compareIds` (replica string, then seq), and `idKey` (`"replica:seq"` map key). Every tie in the system breaks here.
+- `item.ts` — The shape of one tree node (`Item`), the frozen `ROOT` sentinel that closes the trailing block, the mark LWW register (`MarkState`), and the untrusted-data validators (`isContent`, `isMarkSet`, `hasExactKeys`) that keep `apply` total.
+- `ops.ts` — The four operations (`ins`, `del`, `fmt`, `blk`) and `opDependencies`, which makes causality a data fact (an op is parked precisely when a dependency id is absent). `del` names an id, never an index — that is what makes it commute.
+- `apply.ts` — **THE function.** `refuse` (document-free shape checks), the seq-gap/idempotence gate, `park`/`drain` for the pending buffer, `integrate*` (insert, delete, format, block), and `wins` (LWW under the `(lamport, replica, seq)` total order). Convergence is a property of this file alone.
+- `doc.ts` — The whole replica state as one immutable value (`items`, `children`, `sv`, `pending`, `formatLamport`), plus read-only queries and `unsatisfiablePending`/`dropPending` for ops that can never drain.
+- `siblings.ts` — One item's children on one side, kept sorted by `compareIds` and **chunked** (`MAX_CHUNK = 256`) so a hostile flood of N inserts under one parent is not O(N²).
+- `traverse.ts` — The tree read as a sequence: iterative `traversalOrder` (L children in id order, self, R children), `nextInTraversal` (the tombstone-inclusive successor the insert rule needs), and `PositionIndex` — a Fenwick-tree-backed, persistently-derivable index that answers "id at visible offset" in O(log n) without re-traversing.
+- `stateVector.ts` — "What I hold," per replica. `svDiff`/`opsSince` compute the exact catch-up payload on reconnect; the whole document is never re-sent.
+- `local.ts` — Turns editor intent ("insert at visible index 7") into ops via the Fugue rule `fuguePlace`, then routes them through the same `apply`, so a local edit is never a special case.
+- `persistentMap.ts` — Immutable map with structural sharing, so `apply` returns a new `Doc` cheaply and an older `Doc` never sees a newer edit (time-travel and undo are free).
+- `canonical.ts` / `snapshot.ts` — Equal logical state → equal canonical bytes → equal content hash (the convergence tripwire); and encode/decode of a `Doc` for persistence.
+
+### Excerpt 1 — Character identity and the one total order (`ids.ts`)
+
+Fugue gives every inserted character a globally unique, immutable identity the instant it is typed; positions are never integers on the wire. That identity is `(replica, counter)`, and one comparator decides every ordering question.
+
+```ts
+export interface ItemId {
+  readonly replica: ReplicaId;   // 13-char base32 id of the author replica
+  readonly seq: number;          // that replica's own contiguous counter
+}
+
+export function compareIds(a: ItemId, b: ItemId): -1 | 0 | 1 {
+  // `<` on strings compares UTF-16 code units, which for the [a-z2-7] alphabet is code-point order
+  // and is identical on every platform. localeCompare would not be; it is never used here.
+  if (a.replica < b.replica) return -1;
+  if (a.replica > b.replica) return 1;
+  if (a.seq < b.seq) return -1;
+  if (a.seq > b.seq) return 1;
+  return 0;
+}
+```
+
+**Line by line.**
+- `replica: ReplicaId` — a fixed-length 13-char `[a-z2-7]` string (`REPLICA_ID_RE`). Fixed length is deliberate: lexicographic string order then equals the order every replica agrees on, so no two peers can disagree about which id is "smaller."
+- `seq: number` — a per-replica counter that is *contiguous* (1, 2, 3, …). Contiguity is the whole reason a state vector (one integer per replica) is a *complete* description of what a peer holds.
+- `compareIds` — the single total order. It compares `replica` first (plain `<` on the restricted alphabet is code-point order on every JS engine), then `seq`. It is used in two unrelated places that must agree: sorting siblings in the tree, and breaking last-writer-wins ties for formatting. Locale-aware comparison is explicitly banned because it varies by platform and would break convergence.
+
+**Interviewer might ask — "Why `(replica, seq)` instead of a fractional index or a timestamp?"** A fractional index (0.5 between 0 and 1) eventually runs out of precision under sustained insertion at one spot and needs rebalancing, which is a coordination point. A timestamp needs synchronized clocks and still ties. `(replica, seq)` is collision-free by construction (a replica never reuses a seq), needs no clock, and gives a *stable total order* every peer computes identically — which is exactly what a CRDT needs and why no part of Weft's algorithm ever reads wall time.
+
+### Excerpt 2 — The insert-between rule and the integrate/convergence gate (`local.ts` + `apply.ts`)
+
+"Insert between two characters" is answered in two steps: `fuguePlace` decides *where in the tree* the new node hangs, and `apply` is the one gate every op — local or remote — passes through to become part of the converged state.
+
+```ts
+// local.ts — the Fugue placement rule
+export function fuguePlace(doc: Doc, left: ItemId, right: ItemId | null): { parent: ItemId; side: Side } {
+  // `right` is null only at the very end of the traversal, and then `left` has no right children.
+  if (childrenOf(doc, idKey(left)).R.length === 0 || right === null) return { parent: left, side: 'R' };
+  return { parent: right, side: 'L' };
+}
+```
+
+```ts
+// apply.ts — THE function. Convergence (I1) is a property of this function alone.
+export function apply(doc: Doc, op: Op): ApplyResult {
+  const reason = refuse(op);                                          // 1. document-free shape checks
+  if (reason !== null) return { kind: 'rejected', doc, reason };
+
+  const held = svGet(doc.sv, op.id.replica);                          // 2. what we already have from this author
+  if (op.id.seq <= held) return { kind: 'duplicate', doc };           //    idempotence: already applied
+  if (op.id.seq !== held + 1) return { kind: 'rejected', doc, reason: 'SEQ_GAP' };  // must be contiguous
+  const counted: Doc = { ...doc, sv: svSet(doc.sv, op.id.replica, op.id.seq) };
+
+  const missing = opDependencies(op).filter((dep) => !counted.items.has(idKey(dep)));  // 3. causal deps present?
+  const first = missing[0];
+  if (first !== undefined) return { kind: 'pending', doc: park(counted, op, first), missing };  // park it
+
+  const drained: Op[] = [];
+  const next = drain(integrate(counted, op), op, drained);            // 4. integrate, then unblock waiters
+  return { kind: 'applied', doc: next, drained };
+}
+```
+
+**Line by line.**
+- `fuguePlace`: given the visible left neighbour and its tombstone-inclusive successor `right`, the new item becomes the **right child of `left`** when that seat is empty; otherwise the **left child of `right`**. Concurrent inserts at the same spot therefore land as siblings under one parent and are ordered *deterministically by `compareIds`* inside `apply` (via `insertSibling`), so every replica interleaves them identically — the "insert-between" guarantee. `childrenOf` and `nextInTraversal` (the tombstone-inclusive successor) are read through `traverse.ts`; deleted characters stay in the tree as tombstones precisely so this neighbour question has the same answer on every peer.
+- `apply` step 1 — `refuse(op)` runs every check that needs no document (well-formed id, valid content shape, no self-parent, no left-child-of-ROOT). These are the checks that make `apply` *total over `unknown`*: a malformed op comes back `rejected`, never thrown, never half-applied.
+- step 2 — the state vector is read for idempotence and contiguity. `seq <= held` means we already have it (safe to replay on reconnect); `seq !== held + 1` is a gap (a missing earlier op), rejected. The vector counts every op *received* — even parked ones — so a parked op's successor is not treated as a gap.
+- step 3 — `opDependencies` lists the ids this op cannot live without (an `ins`'s parent, a `del`/`blk`'s target, a `fmt`'s targets). If any is absent the op is **parked** under that missing id, to be retried when it lands. This is how out-of-order delivery converges without a lock.
+- step 4 — `integrate` attaches the item (inserts the id into the correct sorted sibling chunk), then `drain` transitively applies any parked ops this one just unblocked. The returned `Doc` shares structure with the old one via `PersistentMap`, so the previous `Doc` is untouched.
+
+**Interviewer might ask — "Two people type at the same cursor position while offline. What guarantees they don't clobber each other or land in different orders on the two screens?"** Neither op carries an index; each carries a stable `ItemId`. Both resolve through `fuguePlace` to the *same* parent/side, so they become siblings in one sorted list, and `insertSibling` orders that list by `compareIds` — a total order every replica computes identically. So both characters survive (no clobber) and appear in the *same* order on both screens regardless of arrival order. Complexity: the insert is O(log n) to find the chunk plus one bounded chunk copy (chunking caps it so a flood of inserts at one seat stays near O(√n) per op instead of O(n)); `apply` overall is dominated by that sibling insert, and the parked-op `drain` is amortized O(1) per delivered op.
+
+### Excerpt 3 — State-vector reconnect (`stateVector.ts`)
+
+After an offline stretch, peers must exchange only the ops the other is missing — never the whole document. Because each replica's seqs are contiguous, one integer per replica describes exactly what it holds, and set difference is subtraction.
+
+```ts
+export function svDiff(mine: StateVector, theirs: StateVector): { iHave: StateVector; theyHave: StateVector } {
+  // `iHave` lists, per replica, my highest seq where it exceeds theirs (they need theirs+1..mine);
+  // `theyHave` is the mirror image. Replicas where we agree appear in neither.
+  const iHave: Record<string, number> = {};
+  const theyHave: Record<string, number> = {};
+  for (const r of replicasOf(mine, theirs)) {
+    const m = svGet(mine, r);
+    const t = svGet(theirs, r);
+    if (m > t) iHave[r] = m;
+    else if (t > m) theyHave[r] = t;
+  }
+  return { iHave: Object.freeze(iHave) as StateVector, theyHave: Object.freeze(theyHave) as StateVector };
+}
+```
+
+**Line by line.**
+- `StateVector` is `Record<ReplicaId, number>` — replica id → highest contiguous seq held. A missing replica and a replica at `0` mean the same thing (nothing held).
+- `replicasOf(mine, theirs)` unions the replicas named by either vector and sorts them by code point, so the output is deterministic.
+- For each replica, `svGet` reads the highest seq via `Object.hasOwn` (never an inherited `constructor` property — a prototype-pollution guard). If `m > t`, I hold ops the peer lacks (`iHave[r] = m`, meaning they need `t+1..m`); if `t > m`, the mirror; if equal, neither vector lists it.
+- The result is frozen so it can't be mutated after the fact. `opsSince(mine, theirs, log)` then walks `iHave` and pulls exactly `log.get(r, theirs+1, mine)` from the `OpLog` — that concatenation *is* the catch-up payload sent on reconnect.
+
+**Interviewer might ask — "Why is exchanging state vectors enough, and what happens to the duplicates you inevitably resend?"** It is enough because per-replica seqs are contiguous, so a single number per replica is a complete, gap-free summary of that replica's op set; the difference of two summaries is precisely the missing ops, so the payload is O(ops-behind), not O(document-size). Duplicates are harmless: `apply`'s step 2 (`op.id.seq <= held → duplicate`) makes replay **idempotent**, which is why the client can safely resend across a flaky reconnect without dedup bookkeeping. Trade-off: a state vector grows with the number of *distinct replicas that ever edited*, not document size — cheap for this design (no accounts, few peers), and it says nothing about *which* ops, only *how many*, which is exactly why seq contiguity is load-bearing.

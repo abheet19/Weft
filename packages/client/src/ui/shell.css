@@ -556,11 +556,14 @@ kbd { font: 500 11px/1 var(--font-mono); padding: 3px 5px; border-radius: 5px; b
   line-height: 1.2; color: var(--ink); max-width: 42vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .title.titlefield .docid { font-size: 11px; color: var(--ink-3) }
 
-/* ---- 27.4 Editor page — the artifact's borderless centred column on the ambient ground ----
-   The prototype's opaque "paper" card becomes a plain column: the document sits directly on the
-   drifting L0 ground, exactly as the artifact draws it. History's preview keeps a real card (27.9). */
-.page { max-width: calc(640px + 112px); padding: 40px 56px 96px; min-height: 60vh;
-  background: transparent; border: 0; box-shadow: none }
+/* ---- 27.4 Editor page — an opaque "paper" sheet centred on the ambient ground ----
+   Owner feedback (2026-09-14): a writing app needs a VISIBLE page, not text floating on the
+   background. The document is a real opaque --paper card (the token literally means "editor page";
+   glass house rule: content surfaces are opaque) with a soft hairline + drop shadow so it reads
+   as a sheet lifted off the drifting L0 ground. History's preview keeps its own card (27.9). */
+.page { max-width: calc(640px + 112px); padding: 44px 60px 100px; min-height: 62vh;
+  background: var(--paper); border: 1px solid var(--line); border-radius: 18px;
+  box-shadow: 0 30px 70px -34px rgba(0,0,0,.62) }
 .toolbar-host { max-width: calc(640px + 112px) }
 .toolbar-host.toolbar-loading.glass { background: var(--gl-fill) }
 .notice { max-width: calc(640px + 112px) }

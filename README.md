@@ -14,21 +14,23 @@ offline-first, conflict-free, and honest about exactly where your work is.
 <br>
 
 [![CI](https://github.com/abheet19/Weft/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/abheet19/Weft/actions/workflows/ci.yml)
-[![Status](https://img.shields.io/badge/build-feature--complete_S1_to_S8-3fd0e0)](#-where-this-project-is)
-[![Runtime deps](https://img.shields.io/badge/core_runtime_deps-0-3fd0e0)](#-tech-stack)
-[![Node](https://img.shields.io/badge/Node-22-339933?logo=nodedotjs&logoColor=white)](#-install)
+[![Live](https://img.shields.io/badge/live-weft--abheet.fly.dev-3fd0e0)](https://weft-abheet.fly.dev)
+[![Status](https://img.shields.io/badge/build-feature--complete_S1–S8-3fd0e0)](#-where-this-project-is)
+[![Runtime deps](https://img.shields.io/badge/CRDT_runtime_deps-0-3fd0e0)](#-tech-stack)
+[![Node](https://img.shields.io/badge/Node-22-339933?logo=nodedotjs&logoColor=white)](#-quick-start)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 <br>
 
 <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white">
 <img alt="ProseMirror" src="https://img.shields.io/badge/ProseMirror-000000?style=for-the-badge&logo=prosemirror&logoColor=white">
-<img alt="React" src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB">
+<img alt="React" src="https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB">
 <img alt="WebSocket" src="https://img.shields.io/badge/WebSocket-010101?style=for-the-badge">
 <img alt="IndexedDB" src="https://img.shields.io/badge/IndexedDB-4E4E4E?style=for-the-badge">
 <img alt="Vitest" src="https://img.shields.io/badge/Vitest-6E9F18?style=for-the-badge&logo=vitest&logoColor=white">
 <img alt="fast-check" src="https://img.shields.io/badge/fast--check-property_tests-2F5D8A?style=for-the-badge">
 <img alt="Vite" src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white">
+<img alt="Fly.io" src="https://img.shields.io/badge/Fly.io-24175B?style=for-the-badge&logo=flydotio&logoColor=white">
 
 <br><br>
 
@@ -38,41 +40,32 @@ offline-first, conflict-free, and honest about exactly where your work is.
 
 ### ▶ &nbsp;[**Live demo → weft-abheet.fly.dev**](https://weft-abheet.fly.dev)
 
-<sub><b>Try it:</b> open a document at <code>/d/&lt;any-id&gt;</code>, then open the <b>same</b> <code>/d/&lt;id&gt;</code> in a second tab and watch the two windows converge.</sub>
+<sub><b>Try it:</b> open <b>New document</b>, then open the <b>same</b> <code>/d/&lt;id&gt;</code> in a second tab and watch the two windows converge. <i>(Fly auto-stops the machine — the first hit may cold-start for a second.)</i></sub>
 
 <br>
 
 </div>
 
+<!-- ── The reel: the redesigned glass flow, recorded against the live deployment ── -->
+[![Weft demo reel — the Documents library, New document, the glass editor with the formatting toolbar and the Outline / People / Sync rail, ending on the honest ● Saved pill](docs/media/weft-demo.gif)](https://weft-abheet.fly.dev)
+
+<div align="center"><sub><b>The redesigned flow, end to end.</b> The <b>Documents</b> library → <b>New document</b> (a real navigation to <code>/d/&lt;id&gt;</code>) → the glass editor: an <code>H1</code> title, a bold run, an <code>H2</code>, a highlight and a bulleted list applied from the <b>persistent toolbar</b> while the <b>Outline</b> rail fills in — resting on the honest <code>● Saved</code> pill. A real recording of the deployed app.<br>▶ <b><a href="docs/media/weft-reel.mp4">Watch the smooth 60fps MP4</a></b> &nbsp;·&nbsp; reproduce it with <code>node tools/capture-reel60.mjs</code>.</sub></div>
+
+<br>
+
+<!-- ── The hero: the actual product claim — two windows, offline, merge — with nothing staged ── -->
 [![Weft hero demo — two browser windows on one document: both people typing at once, then window 2 dropped offline while both keep typing so the documents visibly diverge, then reconnecting and every edit merging with no conflict prompt](docs/demo/weft-merge.gif)](https://weft-abheet.fly.dev)
 
-<div align="center"><sub><b>The whole product in seventeen seconds.</b> Two independent browser sessions on the same <code>/d/&lt;id&gt;</code> — both typing at once, then window&nbsp;2 is cut off the network (a real <code>setOffline</code>: <code>navigator.onLine</code> flips, the socket drops, the pill counts <code>36 changes on this device</code>) while <b>both</b> keep typing, so the two documents visibly <b>diverge</b>. On reconnect they <b>converge</b> — Weft's own <code>Back online — 36 offline edits merged.</code> strip, both pills back to <code>● Saved</code>, and <b>no "resolve conflict" dialog</b>, because a CRDT has nothing to ask. A real recording of the deployed app — reproduce it with <code>node tools/record-demo.mjs</code>.</sub></div>
-
-<br>
-
-[![Weft demo reel — typing a titled document, applying bold, a heading, a highlight and a list from the toolbar while the Outline fills in, ending on the honest ● Saved pill, recorded against the live deployment](docs/media/weft-demo.gif)](https://weft-abheet.fly.dev)
-
-<div align="center"><sub>A live editing pass: an <code>H1</code> title, a bold run, an <code>H2</code>, a highlight and a bulleted list applied from the persistent toolbar while the <b>Outline</b> rail fills in — ending on the honest <code>● Saved</code> pill. A real recording of the deployed app — reproduce it with <code>node tools/capture-reel.mjs</code>.</sub></div>
-
-<br>
-
-[![Weft — the persistent toolbar, a formatted document, the Outline rail, and the honest ● Saved pill, captured from the current local production build](docs/media/weft-editor.png)](https://weft-abheet.fly.dev)
-
-<div align="center"><sub>The persistent formatting toolbar · a live document with headings, lists and marks · the <b>Outline</b> rail · the time-travel <b>History</b> slider · the honest <code>● Saved</code> pill. A current local production-build capture — reproduce it with <code>node tools/capture-hero.mjs</code>.</sub></div>
-
-> [!TIP]
-> **Verification snapshot (10 September 2026):** [executed workflows and limits](docs/VERIFICATION.md) · [usage/release plan](docs/SANITY.md) · [deployment operations](docs/DEPLOY.md). The gate covers 613 distinct Vitest cases, a 100,000-operation benchmark, and 33 real-browser cases, including all available CTAs at desktop and 320 px, offline/reconnect, corrupt-storage recovery, and command-palette focus. The image reports its exact source SHA at `/health`; deployment is claimed only when that SHA matches the reviewed commit and the public browser smoke passes.
->
-> The two README PNG stills were refreshed from the current real **local production build** and isolated data. Existing GIFs are earlier recordings, retained for the longer walkthrough; they were not re-recorded in this pass.
+<div align="center"><sub><b>The whole product in seventeen seconds.</b> Two independent browser sessions on the same <code>/d/&lt;id&gt;</code> — both typing at once, then window&nbsp;2 is cut off the network (a real <code>setOffline</code>: <code>navigator.onLine</code> flips, the socket drops, the pill counts <code>changes on this device</code>) while <b>both</b> keep typing, so the two documents visibly <b>diverge</b>. On reconnect they <b>converge</b> — Weft's own <code>Back online — N offline edits merged.</code> strip, both pills back to <code>● Saved</code>, and <b>no "resolve conflict" dialog</b>, because a CRDT has nothing to ask. Reproduce it with <code>node tools/record-demo.mjs</code>.</sub></div>
 
 > [!NOTE]
 > **Where this project is.** Weft is **feature-complete**: all eight build slices (S1–S8) are built,
 > tested, and hardened after hostile review — the CRDT core, the sync protocol and relay, the
 > ProseMirror editor binding, the offline-first store, presence and remote carets, formatting,
-> history and local undo, and the ⌘K command palette (see [Gates](#-where-this-project-is)). The
-> [DESIGN.md](DESIGN.md) brief argues the CRDT choice; [docs/DEMO.md](docs/DEMO.md) is the 90-second
-> demo. Everything below the install line runs today. Nothing in this README states a test count that
-> CI does not earn — the CI badge is the only badge that asserts a result.
+> history and local undo, and the ⌘K command palette. The `redesign-glass` branch adds the glass
+> **app shell** — a nav rail, a **Documents** library, and **History** / **Settings** screens — over
+> that same live session, and is what the live site serves today. Nothing in this README states a
+> test count that CI does not earn — the CI badge is the only badge that asserts a result.
 
 ---
 
@@ -81,12 +74,13 @@ offline-first, conflict-free, and honest about exactly where your work is.
 
 - [The problem](#the-problem)
 - [The one hard idea](#the-one-hard-idea)
+- [Quick start](#-quick-start)
+- [Demo](#-demo)
 - [How a keystroke travels](#-how-a-keystroke-travels)
 - [What "no lost edits" actually means](#-what-no-lost-edits-actually-means)
 - [The surface](#-the-surface)
-- [Architecture](#-architecture)
+- [System design](#-system-design)
 - [Tech stack](#-tech-stack)
-- [Install](#-install)
 - [Where this project is](#-where-this-project-is)
 - [What it does not do yet](#-what-it-does-not-do-yet)
 - [Design documents](#-design-documents)
@@ -122,6 +116,58 @@ siblings on the same side sort by id.  the document = in-order traversal.
 ```
 
 <div align="center"><sub>That is the whole CRDT. Everything else — convergence, causality, tombstones, offline — follows from it. The argument is in <a href="docs/01-DESIGN.md">01-DESIGN.md §1</a>.</sub></div>
+
+## ⚡ Quick start
+
+```powershell
+git clone https://github.com/abheet19/Weft.git
+cd Weft
+npm install
+
+npm run dev          # server on 127.0.0.1:4200 + client on 127.0.0.1:5173
+                     # open http://127.0.0.1:5173 → New document, then open the SAME /d/<id> in a second window
+```
+
+Verify the whole thing the way CI does, and prove convergence without a browser:
+
+```powershell
+npm run check        # typecheck → lint (+ dependency/purity boundaries) → tests (incl. property tests)
+                     #   → coverage gates → 100k-op benchmark → Playwright e2e
+
+node packages\crdt\examples\two-replicas.mjs      # two replicas, random arrival order, identical result
+node packages\client\examples\two-headless.mjs    # the full client path, headless
+```
+
+Regenerate the README media (each drives the **live** deployment unless `WEFT_URL` says otherwise):
+
+```powershell
+node tools/capture-reel60.mjs   # the 60fps reel + looping GIF — the redesigned glass flow (Playwright + ffmpeg)
+node tools/record-demo.mjs      # the hero GIF — two windows, offline, merge          (Playwright + Python/Pillow)
+node tools/capture-hero.mjs     # the still screenshots                              (Playwright)
+```
+
+> **Requirements:** Node 22+. The media scripts need [Playwright](https://playwright.dev)
+> (`npx playwright install chromium`) and [ffmpeg](https://ffmpeg.org) on `PATH` (or `FFMPEG=<path>`);
+> `record-demo.mjs` also needs Python 3 with Pillow.
+
+## ▶ Demo
+
+The reel at the top is the **redesigned glass flow**, recorded against the live site:
+
+1. **Documents library** — the app's home. Weft has no accounts, so this is the list of documents
+   *this browser* has opened (from a local registry, never a fabricated "shared with you" roster).
+2. **New document** — a real navigation to a fresh `/d/<id>`.
+3. **The glass editor** — the persistent formatting toolbar, a live document, and the
+   **Outline / People / Sync** side rail.
+4. **The honest `● Saved` pill** — drawn from the server's `ack`, never a keystroke and never a timer.
+
+The **second** GIF is the real product claim: two browser windows on one document, one dropped
+**offline** mid-sentence (a real `setOffline`, not a staged pause), both typing so the documents
+visibly **diverge**, then reconnecting so every edit **merges** — with no conflict prompt. The
+`● Saved` pill and the *"N offline edits merged"* strip are the app's own pixels, untouched. The
+impressive beat is the **convergence**, not the typing — the full script is in [docs/DEMO.md](docs/DEMO.md).
+
+**[▶ Open the interactive prototype](docs/prototype/weft.html)** — every screen and flow, clickable, no build needed.
 
 ## ⇄ How a keystroke travels
 
@@ -173,20 +219,21 @@ so in more words.
 A calm, opaque writing page with a thin layer of glass chrome, designed so the *sync state* is the
 most legible object on screen. "No collaborators" and "cannot reach the server" never look the same.
 
-**Everything in the editor is a real, mergeable edit** — every control is the *same* `prosemirror-commands` command its keyboard shortcut runs, so a click and a keystroke are one op:
+**The redesigned app shell** wraps the editor in a left **nav rail** with four destinations — a
+**Documents** library (the local registry of what this browser has opened), the **Editor**, a
+**History** screen, and a **Settings** screen (theme, accent, reduce-transparency, your name). Only
+the Documents screen unmounts the live session; Editor / History / Settings share **one** WebSocket
+connection, so switching screens costs nothing on the wire.
+
+**Everything in the editor is a real, mergeable edit** — every control is the *same*
+`prosemirror-commands` command its keyboard shortcut runs, so a click and a keystroke are one op:
 
 - **Marks** — bold, italic, underline, strikethrough, inline code, highlight, per-run **text & highlight colour**, and links (`⌘K`). Formatting is per-character last-writer-wins (the design says why).
 - **Blocks** — H1–H3, bulleted / numbered / **checklist** items (ticking a box is a collaborative edit, not a local DOM flag), block quote, code block, and a divider.
 - **The right rail — three tabs** — **Outline** (jump by heading, drawn live from the doc), **People** (presence: who is here, their colour, follow a peer's caret), and **Sync** (one calm status, with the per-replica state vectors + converged content hash and the chaos switches folded into **Diagnostics**).
 - **Time-travel** — a **History** slider replays the document op-by-op, read-only, with an optional per-author colour wash.
-- **⌘K command palette** — a real `<dialog>` with a focus trap and return-focus; the keyboard front door to theme, reduce-transparency, presence, time-travel and the same chaos switches the tests drive.
+- **⌘K command palette** — a real `<dialog>` with a focus trap and return-focus; the keyboard front door to navigation, theme, reduce-transparency, presence, time-travel and the same chaos switches the tests drive.
 - **Local undo/redo** — this replica's own actions, emitted as real inverse ops so the mirror stays consistent (I7).
-
-<div align="center">
-
-**[▶ Open the interactive prototype](docs/prototype/weft.html)** — every screen and flow, clickable, no build needed
-
-</div>
 
 | Live | Offline | Reconnected | Diverged (tripwire) |
 |------|---------|-------------|---------------------|
@@ -196,27 +243,26 @@ most legible object on screen. "No collaborators" and "cannot reach the server" 
 
 <div align="center"><sub><b>The collaboration proof.</b> Two independent browser sessions on the same <code>/d/&lt;id&gt;</code>: the presence avatar stack, the <b>People</b> roster (<i>2 here now</i>), a peer's coloured remote caret, and both peers' text <b>converged on one page</b> — the impressive beat is the convergence, not the typing.</sub></div>
 
-The **Sync Inspector** panel shows each replica's state vector and content hash, drawn from real
-messages, so the demo's impressive moment is watching two documents *converge*, not watching
-someone type. A **⌘K command palette** (a real `<dialog>` with a focus trap and return-focus) is the
-keyboard front door to every control — theme, presence, time-travel, and the same chaos switches the
-tests drive.
+## ⌂ System design
 
-## ⌂ Architecture
+The whole system is split along one line: **pure convergence logic** that never touches IO, a clock
+or randomness (so property tests can hammer it directly), and a thin IO shell around it. The
+**server never imports the CRDT** — it stores and relays bytes it cannot interpret, which is what
+keeps merge semantics in exactly one place.
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'primaryColor':'#0f1f2a','primaryTextColor':'#e8ecef','primaryBorderColor':'#38c3d6','lineColor':'#7aa7b3','fontFamily':'Inter, system-ui, sans-serif'}}}%%
 flowchart LR
   subgraph browser[Browser tab]
     direction TB
-    UI[React shell<br/>pill · presence · inspector]:::io
+    UI[React shell<br/>nav rail · Documents · pill · presence · rail]:::io
     PM[ProseMirror<br/>binding]:::io
-    CRDT[["@weft/crdt<br/>Fugue tree · ops · apply<br/>state vectors · snapshot"]]:::pure
+    CRDT[["@weft/crdt<br/>Fugue tree · ops · apply<br/>state vectors · snapshot · hash"]]:::pure
     IDB[(IndexedDB<br/>ops · meta · snapshot)]:::store
     SES[session machine<br/>offline → connecting → syncing → live → degraded]:::pure
   end
   PROTO[["@weft/protocol<br/>messages · validators · limits"]]:::pure
-  subgraph server[Server · 127.0.0.1]
+  subgraph server[Server · Fly.io]
     direction TB
     WS[ws relay<br/>rooms · rate limits]:::io
     LOG[(append log<br/>JSONL · fsync)]:::store
@@ -233,6 +279,13 @@ flowchart LR
 ```
 
 <div align="center"><sub><span style="color:#38c3d6">■</span> pure (no IO, no clock, no randomness — property-testable) &nbsp;·&nbsp; <span style="color:#7aa7b3">■</span> IO &nbsp;·&nbsp; <span style="color:#d8be7e">■</span> durable storage. The server <b>never imports the CRDT</b>: it stores and relays, it cannot interpret.</sub></div>
+
+The engineering worth reading:
+
+- **Convergence as an invariant, not a hope.** Every insert carries a permanent `(replica, counter)` identity; sibling placement and traversal are deterministic across every arrival order, deletes are tombstones that replay cannot resurrect, and equal logical state serialises to equal canonical bytes (one content hash both peers can compare). A numbered property test attacks each invariant with random operation sequences and arrival orders.
+- **Durability with honest milestones.** *In memory*, *on this device* (IndexedDB committed), and *Saved* (appended, `fsync`'d, and acknowledged by the relay) are genuinely different states, and the pill shows which one you are in — the save copy is derived from the `ack`, never a timer.
+- **Offline as the ordinary case.** The reconnect path exchanges state vectors and safely replays duplicates; an hour offline is a catch-up, not a rebase. This is the concrete reason the design chose a CRDT over OT / `prosemirror-collab` (whose worst case is exactly that long offline rebase).
+- **A tripwire that cannot be hidden.** If two replicas ever disagree at an equal state vector, a red alert appears above the editor with only a *"Copy report & dismiss"* action — no casual cross — so a real bug can never be waved away.
 
 <details>
 <summary><b>Why not just use Yjs?</b></summary>
@@ -283,31 +336,11 @@ ago" and is labelled client-reported. [01-DESIGN.md §3.6](docs/01-DESIGN.md#36-
 | Persistence | IndexedDB (browser built-in) | none |
 | Transport | WebSocket; server uses `ws` (Node 22 ships only a client) | yes (`ws`) |
 | Tests | Vitest, fast-check (property tests), fake-indexeddb, jsdom | dev-only |
+| Deploy | Docker + Caddy on Fly.io; `/health` reports the build's source SHA | — |
 | CI | GitHub Actions on Windows and Ubuntu | — |
 
 > "Zero dependencies" would be a lie. The honest sentence is: **the CRDT and protocol packages have
 > zero runtime dependencies; the client needs ProseMirror and React; the server needs `ws`.**
-
-## ⬇ Install
-
-```powershell
-cd D:\code\Weft
-npm install
-npm run check        # typecheck → lint → tests (incl. property tests) → coverage gates → bench → Playwright e2e
-npm run dev          # server on 127.0.0.1:4200 + client on 127.0.0.1:5173 — open the same /d/<id> in two windows
-
-# convergence proofs without a browser:
-node packages\crdt\examples\two-replicas.mjs
-node packages\client\examples\two-headless.mjs
-```
-
-Regenerate the README media (each drives the **live** deployment unless `WEFT_URL` says otherwise):
-
-```powershell
-node tools/record-demo.mjs   # the hero GIF - two windows, offline, merge (Playwright + Python/Pillow)
-node tools/capture-reel.mjs  # the editing reel                           (Playwright + ffmpeg)
-node tools/capture-hero.mjs  # the still screenshots                      (Playwright)
-```
 
 ## ⌗ Where this project is
 
@@ -322,7 +355,11 @@ tree; a document that disagrees with the code is a bug.
 
 The full approval and per-slice record — what each slice built, what every hostile review found, and
 how each fix was tested — is in [docs/00-GATES.md](docs/00-GATES.md). CI runs the six-gate suite
-(`npm run check`) on Windows and Ubuntu; the badge at the top reflects that run.
+(`npm run check`) on Windows and Ubuntu; the badge at the top reflects that run. The
+[verification snapshot](docs/VERIFICATION.md), [release plan](docs/SANITY.md) and
+[deployment operations](docs/DEPLOY.md) record how a claim of "deployed" is earned: the image reports
+its exact source SHA at `/health`, and deployment is asserted only when that SHA matches the reviewed
+commit and the public browser smoke passes.
 
 ## ∅ What it does not do yet
 
@@ -337,12 +374,13 @@ scaling · anything that belongs to another project.
 | Doc | What it holds |
 |-----|---------------|
 | [DESIGN.md](DESIGN.md) | the interview brief: the CRDT decision argued and its trade-offs, self-contained |
+| [CONTEXT.md](CONTEXT.md) | the current implementation contract, trust boundaries, and interview Q&A |
 | [docs/DEMO.md](docs/DEMO.md) | the 90-second demo script — the impressive beat is convergence, not typing |
 | [00-GATES.md](docs/00-GATES.md) | the gate process, approval record, and the verbatim build prompt for Gate 3 |
 | [01-DESIGN.md](docs/01-DESIGN.md) | the CRDT decision argued, data model, sync protocol, offline story, architecture, scope, demo, risks |
 | [02-LLD.md](docs/02-LLD.md) | module map, public signatures, 15 numbered invariants, state machine, wire format, test plan, slices, adversarial plan |
 | [03-UI.md](docs/03-UI.md) | the "Loom glass" design language, tokens, every screen state and its exact copy |
-| [prototype/weft.html](docs/prototype/weft.html) | the clickable high-fidelity prototype the build must port |
+| [prototype/weft.html](docs/prototype/weft.html) | the clickable high-fidelity prototype the build ports |
 | [research/](docs/research/) | dated research briefs (editor UIs, liquid glass, CRDT literature) |
 
 ---

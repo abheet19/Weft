@@ -1,12 +1,16 @@
 # Weft — current implementation context
 
-> Evidence snapshot: 10 September 2026 IST. Canonical repository: `D:\Code\Weft`. The release candidate fixes command-palette focus restoration, adds a browser-level all-CTA/recovery matrix, and makes `/health` report the build's exact source SHA. `MEMORY.md` and the external sign-off evidence record the tested and deployed commit; this file does not hard-code its own commit hash because changing that text would create a different commit.
+> This file is fed to an external AI as the single source of truth for Weft. It is written to be exhaustive and interview-ready: it defines the trending terms, the architecture, the redesigned UI, the current deploy, and (at the end) the likely interview questions with answers. Read it top to bottom.
+
+> Evidence snapshot: 14 September 2026 IST. Canonical repository: `D:\Code\Weft`. The **live site is `https://weft-abheet.fly.dev`, served from the `redesign-glass` branch**, which re-skins the product into a glass **app shell** (a left nav rail, a **Documents** library, and **History** / **Settings** screens) over the same live document session; the underlying CRDT/sync/store engine is unchanged from the feature-complete S1–S8 build. The prior release candidate fixed command-palette focus restoration, added a browser-level all-CTA/recovery matrix, and made `/health` report the build's exact source SHA. `MEMORY.md` and the external sign-off evidence record the tested and deployed commit; this file does not hard-code its own commit hash because changing that text would create a different commit.
 >
 > Current source and executable tests win if an older design note disagrees. A dirty working tree is a candidate, a green local run proves only those bytes, and a configured URL is not deployment evidence. Public release proof requires `source SHA -> CI -> image/Fly release -> /health SHA -> browser smoke`.
 
 ## Product contract
 
 Weft is an offline-first collaborative rich-text editor. Two browser peers can edit one document, disconnect, continue locally, reconnect, and converge without a conflict dialog. A deterministic Fugue-style sequence CRDT carries text and rich-text operations; IndexedDB keeps the local log; a WebSocket relay validates, durably appends, acknowledges, and fans out operations. It has no accounts, document authorization, end-to-end encryption, tables/images/nested lists, or demonstrated multi-region scale.
+
+The redesigned surface is a glass **app shell**: a left **nav rail** with four destinations — **Documents** (a local registry of the documents this browser has opened; there is no server-side index because there are no accounts), **Editor**, **History**, and **Settings**. Documents is the "/" landing and fully unmounts the live session; Editor/History/Settings share one WebSocket connection, so switching screens costs nothing on the wire. Everything the previous single-screen editor did — the persistent toolbar, the Outline/People/Sync rail, presence, time-travel, the ⌘K palette, the honest status pill — is preserved inside that shell.
 
 ## Architecture and end-to-end flow
 
@@ -19,6 +23,8 @@ ProseMirror transaction -> binding/toOps -> local CRDT
 
 `packages/crdt` is pure convergence logic. `packages/protocol` owns validation and wire limits. `packages/client` owns ProseMirror binding, local persistence, session state, presence, history, and React UI. `packages/server` is a durable relay/log writer and must not import CRDT semantics. Reconnect exchanges state vectors and safely replays duplicates. “On device” means IndexedDB committed but not server-acknowledged; “Saved” means append, `fsync`, and acknowledgement completed.
 
+The redesigned UI adds a thin navigation layer that does not touch that engine. `ui/App.tsx` owns which of the four screens is active plus the per-device look prefs (theme/accent/reduce-transparency, persisted in guarded `localStorage`). `ui/NavRail.tsx` is the left icon rail. `ui/Documents.tsx` renders the local recents registry (`ui/recents.ts`); “New document” and opening a card are real navigations (`location.assign('/d/<id>')`), the same door the editor already used. `ui/Shell.tsx` hosts the Editor/History/Settings screens over one live `useSession`; selecting Documents unmounts Shell so the socket and IndexedDB handle are released by the normal cleanup path. Deployment: a Docker image supervises the loopback `ws` relay and Caddy as one process on Fly.io; `GET /health` returns `{status, release}` where `release` is the source SHA injected at build time.
+
 ## Code map
 
 | Path | Responsibility |
@@ -28,6 +34,7 @@ ProseMirror transaction -> binding/toOps -> local CRDT
 | `packages/client/src/binding` | ProseMirror transaction/position/rich-text translation |
 | `packages/client/src/session; packages/client/src/store` | connection state, acknowledgement semantics, IndexedDB, and preferences |
 | `packages/client/src/history; packages/client/src/ui` | local inverse-op undo, historical view, toolbar, presence, diagnostics, and accessibility |
+| `packages/client/src/ui/App.tsx; NavRail.tsx; Documents.tsx; Shell.tsx; recents.ts; uiPrefs.ts` | the redesigned glass app shell: screen routing, the nav rail, the Documents library over the local recents registry, and per-device look prefs |
 | `packages/server/src; packages/server/src/log/appendLog.ts` | WebSocket rooms, durable append, acknowledgement, fanout, and limits |
 | `docs/01-DESIGN.md; docs/02-LLD.md; DESIGN.md` | normative algorithm, invariants, slices, and UX |
 | `docs/VERIFICATION.md; docs/DEPLOY.md` | current reproducible gates and release operations |
@@ -43,10 +50,11 @@ ProseMirror transaction -> binding/toOps -> local CRDT
 
 ## User workflows to preserve
 
+- Land on the **Documents** library, create a **New document** (a real navigation to a fresh `/d/{id}`), reopen a card from the local registry, and forget one; switch between the Documents/Editor/History/Settings screens via the nav rail.
 - Edit one `/d/{id}` from two peers, disconnect one, edit both, reconnect, and verify no-loss convergence plus durable save states.
 - Use inline formatting, colors/highlights, links, headings, lists, checklist, quote, code block, divider, undo/redo, and invalid-link recovery.
 - Inspect Outline navigation, People/presence/follow, Sync state vector/hash/diagnostics, History slider/authors/return-to-live, and the command palette.
-- Change name/document title/theme/transparency/sidebar, create a new document, copy the state vector, simulate offline/drop messages, and use the 320 px editor path.
+- Change name/document title/theme/accent/transparency/sidebar from Settings or ⌘K, copy the state vector, simulate offline/drop messages, and use the 320 px editor path.
 
 ## Concepts this project teaches
 
@@ -58,6 +66,25 @@ ProseMirror transaction -> binding/toOps -> local CRDT
 | Durability semantics | IndexedDB commit, socket send, append, `fsync`, and acknowledgement are different milestones |
 | Editor binding | ProseMirror positions are translated to stable CRDT identities and back |
 | Property-based testing | random arrival orders and operation sequences attack convergence, no-loss, and canonicalization |
+
+## Trending terms, explained
+
+Plain-language definitions of the vocabulary a reader or interviewer will hit, each grounded in how it appears in Weft.
+
+- **CRDT (Conflict-free Replicated Data Type):** a data structure whose concurrent edits merge deterministically with no central coordinator and no conflict prompt, because the merge is defined by the data, not by a lock. Weft's document is a CRDT.
+- **Fugue:** the specific list/sequence CRDT algorithm Weft implements (Weidner & Kleppmann, 2023). Its defining property is *maximal non-interleaving*: when two people type at the same spot, their runs stay as whole branches instead of interleaving letter-by-letter. Modelled here as an explicit tree where each character is the left/right child of its neighbour.
+- **Operation-based (op-based) CRDT:** convergence is carried by a stream of small commutative, idempotent operations (insert/delete/format) rather than by shipping whole-state snapshots. Weft appends ops to a log and replays them.
+- **State vector / version vector:** a compact map `replica -> highest counter seen`. On reconnect two peers swap vectors to compute exactly which ops the other is missing — the whole catch-up protocol, no diffing of content.
+- **Tombstone:** a deleted character is marked dead, not removed, so a late-arriving op that references it still has a valid neighbour. Prevents "resurrection" bugs; the cost is storage that a real GC would reclaim (Weft does not).
+- **Idempotency:** applying the same op twice is a no-op. This is what lets reconnect blindly replay a window of ops without double-inserting.
+- **Convergence / strong eventual consistency:** any two replicas that have seen the same set of ops show byte-identical documents, regardless of arrival order. Weft proves it with a canonical serialization and a content hash both peers compare.
+- **Canonicalization / content hash:** equal logical state must serialize to equal bytes so the hash is a legitimate equality check; ordering never depends on wall-clock or arrival time.
+- **Offline-first / local-first:** the local device is the source of truth; the network is an enhancement. Edits commit to IndexedDB first and sync when possible, so an hour offline is the ordinary case, not an error.
+- **OT (Operational Transformation):** the older alternative (Google Docs' lineage, ProseMirror's `prosemirror-collab`). Transforms each op against concurrent ones, usually via a central server. Simpler metadata, but a long offline period is its worst case (a big rebase) — the exact reason Weft chose a CRDT.
+- **Presence / awareness:** ephemeral, non-persisted per-peer state (who is here, cursor position, colour). It is *not* part of the document CRDT and is dropped on disconnect.
+- **Relay vs. authority:** Weft's server is a relay — it validates the wire format, durably appends, acknowledges, and fans out, but it never imports the CRDT and cannot interpret document meaning. All merge logic lives in exactly one place (the client's pure core).
+- **`fsync` / durability milestones:** *in memory* (applied on screen), *on this device* (IndexedDB committed), and *Saved* (appended, `fsync`'d, acknowledged) are genuinely different guarantees; the status pill shows which one you are in.
+- **Liquid glass / glassmorphism:** the translucent, layered "glass" visual language of the redesigned shell; a reduce-transparency setting flattens it for accessibility.
 
 ## CI, packaging, deployment, and rollback
 
@@ -85,6 +112,22 @@ The final external release record under `verification-work/portfolio-release-202
 - The public demo has no identity, access control, privacy boundary, or end-to-end encryption. Do not use private documents.
 - Benchmarks/Lighthouse are bounded local samples, not public capacity, field Core Web Vitals, or soak evidence.
 - Local undo after remote concurrency can surprise users. Accessibility automation is not a full assistive-device matrix.
+
+## Likely interview questions and answers
+
+Answer in the candidate's own voice; every answer is defensible against the shipped code.
+
+- **Why build a CRDT instead of using Yjs?** To understand it. Yjs is what I'd use at work. Weft's core is deliberately worse than Yjs in five nameable ways (no run-length merging, no compact binary encoding, weaker tombstone GC, no ecosystem, none of Yjs's perf work) but it is readable in one sitting, has a numbered property test per invariant, and uses Fugue for the cleanest available non-interleaving proof.
+- **Why Fugue over RGA / Logoot / YATA?** One placement rule that fits on a whiteboard, and the strongest interleaving guarantee: concurrent runs stay whole rather than interleaving character-by-character. RGA/Logoot/YATA either interleave more or need denser metadata.
+- **How does a keystroke become "Saved"?** ProseMirror transaction → binding maps it to a CRDT op → op applied to the pure tree and text updated → committed to IndexedDB (*on this device*) → sent over WebSocket only after commit → relay validates, appends, `fsync`s, acknowledges → the pill turns *Saved* from that ack (never a timer) → relay fans out to peers, who apply the same op to the same tree and get the same text.
+- **What exactly can still be lost, and what can't?** Can't lose: anything committed to IndexedDB or acknowledged by the server. Can lose: keystrokes in the milliseconds between key press and the IndexedDB commit if the process dies right then, and unsynced edits if the browser evicts site storage before you're next online. Weft requests persistent storage, shows the answer, and always shows the unsynced count.
+- **What happens on an hour offline?** Edits keep committing locally; the pill counts changes on this device. On reconnect the peers exchange state vectors, the client replays the missing ops (idempotent, so duplicates are safe), and both documents converge — no rebase, no conflict dialog, and an inline "N offline edits merged" notice.
+- **How do you know two documents actually converged?** Equal logical state canonicalizes to equal bytes, so each replica publishes a content hash; the Sync/Diagnostics panel compares them. If two replicas disagree at an equal state vector, a non-dismissible red tripwire fires with a copyable report — a bug can't be hidden.
+- **Why doesn't the server import the CRDT?** To keep merge semantics in exactly one place and keep the trust boundary honest: the relay only validates the wire format, appends durably, acknowledges, and fans out. It can't interpret document meaning, so a server bug can't silently change a merge.
+- **How is correctness tested?** Property-based tests (fast-check) throw random operation sequences and arrival orders at convergence, no-loss, and canonicalization; plus unit/integration coverage gates, a deterministic 100k-op benchmark, and a real-browser Playwright matrix (all CTAs, offline/reconnect, corrupt-storage recovery, 320 px, command-palette focus) on Windows and Linux CI.
+- **What does the redesign change architecturally?** Nothing in the engine. It adds a navigation layer (nav rail + Documents library + History/Settings screens) around one live session; only the Documents screen unmounts the session, and it uses real navigations, so the CRDT/sync/store guarantees are identical to the single-screen build.
+- **Why per-character last-writer-wins for formatting instead of Peritext?** It's a deliberate scoped limit: honest and simple, at the cost of some rich-formatting merge nicety. The design doc names Peritext as the thing not built and says why.
+- **Does a wrong client clock break anything?** No. No part of the algorithm reads a clock; ordering is decided by the tree and `(replica, counter)` ids. Wall time is only used for "edited 3 min ago" labels, marked client-reported.
 
 ## Reading order
 

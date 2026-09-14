@@ -1,5 +1,5 @@
 // Page.tsx — the L1 editor page in its four modes, which are three different things plus the
-// ordinary one (03-UI §4.9): `loading` is three skeleton lines and nothing else, `empty` is the
+// ordinary one (03-UI §4.9): `loading` is the skeleton lines and nothing else, `empty` is the
 // single ghost line over an editable document, `error` is the opaque card with the actual error
 // and two actions, `doc` is the document. The markup is the prototype's `#page`; the ghost is the
 // one change — it overlays the live editor instead of replacing it, so an empty document can be
@@ -25,6 +25,10 @@ export function Page({ mode, card, onRetry, onStartFresh, children }: PageProps)
     <section className="page" data-mode={mode} aria-label="Document">
       {children}
       <div className="skel" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+        <i />
         <i />
         <i />
         <i />

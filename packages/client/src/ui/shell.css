@@ -613,3 +613,106 @@ kbd { font: 500 11px/1 var(--font-mono); padding: 3px 5px; border-radius: 5px; b
 .history-preview .page.history-page { background: var(--raised); border: 1px solid var(--line);
   border-radius: var(--r-2); box-shadow: none; padding: 32px 40px; min-height: 240px }
 .history-preview .page.history-page .doc { font-variant-numeric: normal }
+
+/* =====================================================================================
+   27.10 EXACT-MATCH refinement (redesign-glass) — computed-style convergence to the design
+   artifact (redesigns/weft.html), measured artifact-vs-live with Playwright at 1280×800 and
+   375×812 (docs/verification/). These rules come last in the cascade and are decoration only:
+   they retune active-state colour, panel material, header type, and control styling to the
+   artifact WITHOUT touching structure, honesty (no fake sessions/avatars), theme-awareness or
+   the reduced-motion / reduce-transparency guards, which still flow from tokens.css.
+   ===================================================================================== */
+
+/* ---- Active-state colour: the artifact fills an active nav/settings tab with --accent-soft (a
+   14% wash) and colours its label --accent-strong (a brighter mint), not --accent at 16%. ---- */
+.navrail-btn.on, .settings-nav button.on { background: var(--accent-soft); color: var(--accent-strong) }
+.navrail-btn.on { border-color: color-mix(in oklch, var(--accent) 30%, transparent) }
+
+/* ---- Nav rail — translucent surface, deeper blur, border-only (no drop shadow), brighter brand
+   with the stronger hairline, and the artifact's 12px item radius. ---- */
+.navrail { background: color-mix(in srgb, var(--raised) 55%, transparent);
+  backdrop-filter: blur(22px) saturate(1.5); -webkit-backdrop-filter: blur(22px) saturate(1.5); box-shadow: none }
+:root[data-flat="1"] .navrail { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--raised) }
+.navrail-brand { color: var(--accent-strong); border-color: var(--border-strong) }
+.navrail-btn { border-radius: 12px; line-height: 1.15 }
+
+/* ---- Panels on the full-page screens are GLASS in the artifact, not opaque raised. One rule
+   re-skins every card on Documents / History / Settings at once: doc cards, settings groups, the
+   history preview and the restore strip. Reduce-transparency falls back to the solid surface. ---- */
+.screenpage .panel { background: var(--gl-fill);
+  backdrop-filter: var(--gl-blur); -webkit-backdrop-filter: var(--gl-blur);
+  border: 1px solid var(--gl-edge); box-shadow: var(--gl-shadow) }
+:root[data-flat="1"] .screenpage .panel { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--raised) }
+
+/* ---- Documents — faint-wash icon chip with the brighter glyph; the 41px glowing primary CTA;
+   larger ghost buttons (radius 11, weight 700) as the artifact draws them on these screens. ---- */
+.doc-card-icon { background: var(--surface-2); color: var(--accent-strong) }
+.screenpage .btn.primary { height: 41px; gap: 8px }
+.screenpage .btn { border-radius: 11px; font-weight: 700 }
+
+/* ---- Documents / editor loading + empty states — the artifact's Fraunces-italic ghost placeholder
+   and its seven-line skeleton rhythm (a taller title line, varied widths, 14px gaps). ---- */
+.ghost { font-family: var(--font-display); font-style: italic; color: var(--ink-3); font-size: 1.05rem }
+.page[data-mode="loading"] .skel { display: flex; flex-direction: column; gap: 14px }
+.skel i { height: 13px; margin: 0; border-radius: 6px;
+  background: linear-gradient(90deg, var(--surface-2) 25%, color-mix(in oklch, var(--surface-2), var(--ink) 4%) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%; animation: shimmer 1.3s ease-in-out infinite }
+.skel i:nth-child(1) { width: 60%; height: 21px }
+.skel i:nth-child(2) { width: 94%; margin-top: 7px }
+.skel i:nth-child(3) { width: 83% }
+.skel i:nth-child(4) { width: 55% }
+.skel i:nth-child(5) { width: 38%; height: 17px; margin-top: 7px }
+.skel i:nth-child(6) { width: 94% }
+.skel i:nth-child(7) { width: 60% }
+
+/* ---- Settings — wider nav column with the artifact's item metrics; sentence-case white group
+   headers (not uppercase eyebrows); roomier glass groups; bolder row labels. ---- */
+.settings-layout { grid-template-columns: 220px 1fr }
+.settings-nav button { padding: 10px 12px; border-radius: 10px; font-size: .86rem }
+.settings-body .panel { padding: 18px 20px }
+.settings-body .panel-h { margin-bottom: 14px }
+.settings-body .panel-h h2 { font-family: var(--font-ui); font-size: .92rem; font-weight: 600;
+  letter-spacing: -.01em; text-transform: none; color: var(--ink) }
+.settings-body .panel-h .sub { text-transform: none; letter-spacing: normal }
+.set-row { font-size: .86rem }
+.set-row > span { font-weight: 600 }
+.set-row .desc { font-weight: 400 }
+
+/* ---- Segmented control + accent swatches — the artifact's selected segment is a solid raised
+   chip with a drop shadow and a white label (not an accent tint); swatches are 30px rounded-square
+   colour tiles that keep their own hue regardless of the chosen accent. ---- */
+.segmented { background: var(--surface-2); border-radius: 10px }
+.segmented button { font-weight: 700 }
+.segmented button.on { background: var(--raised); color: var(--ink); box-shadow: var(--shadow) }
+.accent-swatch { width: 30px; height: 30px; border-radius: 9px }
+.accent-swatch.on::after { color: #fff }
+.accent-cyan { background: #34e0cf }
+.accent-amber { background: #f0b64d }
+
+/* ---- History — the preview is ONE glass card (the inner replay page becomes transparent, not a
+   second nested card); the restore strip takes the artifact's padding and gap. ---- */
+.history-preview { padding: 26px 30px; border-radius: var(--r-3) }
+.history-preview .page.history-page { background: transparent; border: 0; box-shadow: none; padding: 0; min-height: 200px }
+.history-restore { padding: 16px 18px; gap: 16px; border-radius: var(--r-2) }
+
+/* ---- Heading hierarchy + running type — Documents leads with the artifact's larger display size
+   (clamp to 2.3rem); History/Settings h1 sit at 1.7rem; the sub reads at .92rem. ---- */
+.screenpage-h { font-size: 1.7rem; letter-spacing: -.01em }
+.screenpage[aria-label="Documents"] .screenpage-h { font-size: clamp(1.7rem, 1.1rem + 1.4vw, 2.3rem) }
+.screenpage-sub { font-size: .92rem }
+
+/* ---- Primary CTA — padding-driven height, matching the artifact's 41px box exactly. ---- */
+.screenpage .btn.primary { height: auto; padding: 10px 16px }
+
+/* ---- Documents — card-title tracking, count size, empty-state heading/paragraph type. ---- */
+.doc-card h3 { letter-spacing: -.01em }
+.docs-count { font-size: .78rem }
+.docs-empty h2 { letter-spacing: -.01em }
+.docs-empty p { font-size: .88rem }
+
+/* ---- Settings — the artifact's fainter idle nav labels and the segmented control's .8rem type. ---- */
+.settings-nav button { color: var(--ink-3) }
+.segmented button { font-size: .8rem; gap: 5px }
+
+/* ---- The toggle switch takes the artifact's fainter off-track and 1px hairline. ---- */
+.switch { background: var(--surface-2); border: 1px solid var(--line) }

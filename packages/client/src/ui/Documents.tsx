@@ -80,6 +80,7 @@ export function Documents(): React.JSX.Element {
         <div className="panel docs-empty">
           <Icon name="search" />
           <h2>No document matches “{query.trim()}”</h2>
+          <p>Try another search, or clear it to see everything this browser has opened.</p>
           <button type="button" className="btn" onClick={() => setQuery('')}>
             Clear search
           </button>

@@ -72,7 +72,7 @@ interface ShellProps {
 function describeFault(fault: BindingFault): string {
   switch (fault.kind) {
     case 'mirror':
-      return 'The editor and the document disagreed (I7). The editor was reset to the saved document; the report is in the console.';
+      return 'The editor and the saved document fell out of step. The editor was reset to the saved version; the details are in the console.';
     case 'local':
       return `Your last edit could not be recorded: ${fault.error instanceof Error ? fault.error.message : String(fault.error)}`;
     case 'remote':
@@ -343,7 +343,7 @@ export function Shell({ url, docId, screen = 'editor', onNavigate, theme, flat, 
           {diverged && ready !== null && (
             <div className="notice in" role="alert" aria-live="assertive" style={{ ['--hue' as string]: 'var(--bad)' }} data-testid="diverged">
               <Icon name="alert" />
-              <span className="grow">Replicas disagree (hash mismatch). Nothing was lost; this is a bug and has been logged locally.</span>
+              <span className="grow">This document is out of sync between devices. Nothing was lost; this is a bug, and the details have been saved on this device.</span>
               <button type="button" className="btn" onClick={dismissDivergence}>
                 Copy report &amp; dismiss
               </button>

@@ -28,12 +28,12 @@ export function HistoryScreen({ base, ops, length, position, onPosition, showAut
   return (
     <div className="screenpage" aria-label="History">
       <h1 className="screenpage-h">History</h1>
-      <p className="screenpage-sub">Every operation applied to this document in this session, replayed in order. Scrub to see it as it was, mid-sentence, before anything was ever “Saved.”</p>
+      <p className="screenpage-sub">Replay every change made to this document in this session, in the order it happened. Drag the slider to see the document exactly as it was at any earlier moment.</p>
       <History length={length} position={position} onPosition={onPosition} showAuthors={showAuthors} onShowAuthors={onShowAuthors} />
       <section className="panel history-preview" aria-live="polite">
         <div className="panel-h">
-          <h2>{live ? 'Live document' : `Document at operation ${at}`}</h2>
-          {!live && <span className="sub mono">{length - at} operations ahead, not yet shown</span>}
+          <h2>{live ? 'Live document' : `Document at change ${at}`}</h2>
+          {!live && <span className="sub mono">{length - at} later change{length - at === 1 ? '' : 's'} not shown</span>}
         </div>
         <div className="page history-page">
           <HistoryDoc base={base} ops={ops} position={at} showAuthors={showAuthors} />
@@ -43,7 +43,7 @@ export function HistoryScreen({ base, ops, length, position, onPosition, showAut
         <Icon name="clock" />
         <div>
           <strong>Restoring a past version</strong>
-          <p>Not in v1 — this screen replays the log, it does not write to it. Scrub back to Live to keep editing.</p>
+          <p>Not available yet — this screen only shows the past, it never changes your document. Drag back to Live to keep editing.</p>
         </div>
       </div>
     </div>

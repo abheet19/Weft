@@ -34,7 +34,7 @@ export function History({ length, position, onPosition, showAuthors, onShowAutho
         step={1}
         value={Math.min(position, length)}
         style={{ ['--fill' as string]: fill }}
-        aria-label="Time-travel position (operations applied)"
+        aria-label="Time-travel position"
         data-testid="history-slider"
         onChange={(e) => onPosition(e.target.valueAsNumber)}
       />
@@ -45,7 +45,7 @@ export function History({ length, position, onPosition, showAuthors, onShowAutho
         </label>
       </div>
       <p className="hint">
-        Replays operations from this session over the document as opened. Cross-session versions and restore are not in v1.
+        Rebuilds the document from every change made in this session. Saved versions from earlier sessions, and restoring an old one, aren’t available yet.
       </p>
     </section>
   );

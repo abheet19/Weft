@@ -99,6 +99,13 @@ export function SettingsScreen({ theme, onTheme, flat, onFlat, accent, onAccent,
               </div>
             </section>
           )}
+          {section === 'appearance' && (
+            <aside className="settings-help">
+              <h3>About appearance</h3>
+              <p>These are personal, per-device preferences. Nothing here is a document edit and none of it syncs to your collaborators — Weft keeps your theme, transparency, and accent in this browser only.</p>
+              <p><strong>Theme</strong> follows your system by default. <strong>Reduce transparency</strong> swaps the glass panels for solid surfaces — handy if the blur is heavy on your machine. <strong>Accent</strong> recolours links, focus rings, and the active state.</p>
+            </aside>
+          )}
 
           {section === 'collab' && (
             <section className="panel" aria-labelledby="set-collab-h">
@@ -129,6 +136,13 @@ export function SettingsScreen({ theme, onTheme, flat, onFlat, accent, onAccent,
               )}
             </section>
           )}
+          {section === 'collab' && (
+            <aside className="settings-help">
+              <h3>About collaboration</h3>
+              <p>Your display name rides along in <strong>presence</strong>, so collaborators can see who is editing and where each caret sits.</p>
+              <p>It is never written into the document and never persisted — refresh and it is gone. History and the CRDT op log record edits, not names.</p>
+            </aside>
+          )}
 
           {section === 'shortcuts' && (
             <section className="panel" aria-labelledby="set-shortcuts-h">
@@ -145,6 +159,13 @@ export function SettingsScreen({ theme, onTheme, flat, onFlat, accent, onAccent,
               </div>
             </section>
           )}
+          {section === 'shortcuts' && (
+            <aside className="settings-help">
+              <h3>About shortcuts</h3>
+              <p>Every command here also lives in the palette (⌘K), which searches by name when you cannot recall the key.</p>
+              <p>These bindings are a fixed reference for now — nothing on this panel is a control.</p>
+            </aside>
+          )}
 
           {section === 'debug' && <DebugSection doc={doc} />}
         </div>
@@ -158,12 +179,15 @@ function DebugSection({ doc }: Pick<SettingsScreenProps, 'doc'>): React.JSX.Elem
   const [delayed, setDelayed] = useState(false);
   if (doc === null) {
     return (
-      <section className="panel" aria-labelledby="set-debug-h">
-        <div className="panel-h">
-          <h2 id="set-debug-h">Debug</h2>
-        </div>
-        <p className="rail-empty">Open a document to reach its chaos controls — the same ones the Sync tab’s Diagnostics exposes.</p>
-      </section>
+      <>
+        <section className="panel" aria-labelledby="set-debug-h">
+          <div className="panel-h">
+            <h2 id="set-debug-h">Debug</h2>
+          </div>
+          <p className="rail-empty">Open a document to reach its chaos controls — the same ones the Sync tab’s Diagnostics exposes.</p>
+        </section>
+        <DebugHelp />
+      </>
     );
   }
   const { session, snapshot, userOffline, onSetUserOffline } = doc;
@@ -178,6 +202,7 @@ function DebugSection({ doc }: Pick<SettingsScreenProps, 'doc'>): React.JSX.Elem
     session.runner.receivePresence(PHANTOM, { name: 'phantom', color: 2, hash: bad, sv: snapshot.sv });
   };
   return (
+    <>
     <section className="panel" aria-labelledby="set-debug-h">
       <div className="panel-h">
         <h2 id="set-debug-h">Debug — this document</h2>
@@ -231,5 +256,17 @@ function DebugSection({ doc }: Pick<SettingsScreenProps, 'doc'>): React.JSX.Elem
         </button>
       </div>
     </section>
+    <DebugHelp />
+    </>
+  );
+}
+
+function DebugHelp(): React.JSX.Element {
+  return (
+    <aside className="settings-help">
+      <h3>About debug</h3>
+      <p>These chaos controls drive the same code paths the automated tests use, so you can watch Weft recover live: dropping ops opens a sequence gap the client repairs, and <strong>delay</strong> or <strong>work offline</strong> exercise reconnection.</p>
+      <p><strong>Force divergence</strong> plants a peer with a bad hash to trip the safety tripwire. None of this corrupts your work — the CRDT op log and History stay intact.</p>
+    </aside>
   );
 }

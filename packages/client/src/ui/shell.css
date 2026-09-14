@@ -476,8 +476,20 @@ kbd { font: 500 11px/1 var(--font-mono); padding: 3px 5px; border-radius: 5px; b
 .settings-nav button .i { width: 15px; height: 15px }
 .settings-nav button:hover { background: var(--raised); color: var(--ink) }
 .settings-nav button.on { background: color-mix(in oklch, var(--accent) 16%, transparent); color: var(--accent) }
-.settings-body { min-width: 0; display: flex; flex-direction: column; gap: 16px }
+.settings-body { min-width: 0; display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start }
 .settings-body .panel-h .sub { font-size: 11.5px; color: var(--ink-3) }
+/* Explanatory column that sits beside the settings card on desktop (what each control does,
+   plus the sync/history notes), so the freed width is used rather than left empty. It collapses
+   below the card on narrow screens. */
+.settings-help { display: flex; flex-direction: column; gap: 10px; font-size: 12.5px; line-height: 1.6; color: var(--ink-2) }
+.settings-help h3 { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3) }
+.settings-help p { color: var(--ink-2) }
+.settings-help strong { color: var(--ink); font-weight: 600 }
+@media (min-width: 900px) {
+  .screenpage[aria-label="Settings"] { max-width: 1040px }
+  .settings-body { grid-template-columns: minmax(0, 1fr) minmax(230px, 300px); gap: 24px }
+  .settings-help { position: sticky; top: 28px }
+}
 .set-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; color: var(--ink) }
 .set-row:last-child { border-bottom: none; padding-bottom: 2px }
 .set-row .desc { display: block; font-size: 11.5px; color: var(--ink-3); margin-top: 2px; font-weight: 400 }

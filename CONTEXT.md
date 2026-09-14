@@ -25,6 +25,19 @@ ProseMirror transaction -> binding/toOps -> local CRDT
 
 The redesigned UI adds a thin navigation layer that does not touch that engine. `ui/App.tsx` owns which of the four screens is active plus the per-device look prefs (theme/accent/reduce-transparency, persisted in guarded `localStorage`). `ui/NavRail.tsx` is the left icon rail. `ui/Documents.tsx` renders the local recents registry (`ui/recents.ts`); “New document” and opening a card are real navigations (`location.assign('/d/<id>')`), the same door the editor already used. `ui/Shell.tsx` hosts the Editor/History/Settings screens over one live `useSession`; selecting Documents unmounts Shell so the socket and IndexedDB handle are released by the normal cleanup path. Deployment: a Docker image supervises the loopback `ws` relay and Caddy as one process on Fly.io; `GET /health` returns `{status, release}` where `release` is the source SHA injected at build time.
 
+## How to run and verify
+
+Node 22+; npm workspaces (`crdt`, `protocol`, `client`, `server`). From a clean clone:
+
+- `npm install` — install workspace deps.
+- `npm run dev` — runs `tools/dev.mjs`: the relay on `ws://127.0.0.1:4200` and the Vite client on `http://127.0.0.1:5173`, both stopped together. Open the client, create a **New document**, then open the same `/d/<id>` in a second window to see convergence.
+- `npm run dev:server` — the relay alone (`node packages/server/src/main.ts`); honours `WEFT_PORT` and `WEFT_DATA_DIR`.
+- `npm run check` — the full CI gate: `typecheck` → `lint` (ESLint + `tools/lint-deps.mjs` package-direction + `tools/lint-pure.mjs` purity boundaries) → `test` (unit + property) → coverage gates → `bench` (100k-op benchmark) → `e2e` (Playwright). Husky repeats lint + typecheck pre-commit; GitHub CI repeats the whole gate on Windows and Linux.
+- `npm test` — Vitest across all workspaces. `npm run e2e` — Chromium Playwright against a production Vite build + an ephemeral relay. `npm run bench` — the deterministic benchmark. `npm run docs:check` — validates repository links.
+- `node packages/crdt/examples/two-replicas.mjs` and `node packages/client/examples/two-headless.mjs` — prove convergence without a browser.
+
+Deploy: one Docker image supervises the loopback `ws` relay and Caddy as one process on Fly.io (`fly.toml`, region `sin`, one always-on machine, a `weft_data` volume for the logs). Caddy serves the built SPA, reverse-proxies `/ws*` to `127.0.0.1:4200`, and answers `GET /health` with `{"status":"ok","release":"<WEFT_RELEASE_SHA>"}` — the source SHA injected at build time and the only trusted proof of what is live.
+
 ## Code map
 
 | Path | Responsibility |
@@ -85,6 +98,21 @@ Plain-language definitions of the vocabulary a reader or interviewer will hit, e
 - **Relay vs. authority:** Weft's server is a relay — it validates the wire format, durably appends, acknowledges, and fans out, but it never imports the CRDT and cannot interpret document meaning. All merge logic lives in exactly one place (the client's pure core).
 - **`fsync` / durability milestones:** *in memory* (applied on screen), *on this device* (IndexedDB committed), and *Saved* (appended, `fsync`'d, acknowledged) are genuinely different guarantees; the status pill shows which one you are in.
 - **Liquid glass / glassmorphism:** the translucent, layered "glass" visual language of the redesigned shell; a reduce-transparency setting flattens it for accessibility.
+- **Tree of characters (the core concept, plainly):** Weft does not store the document as a string. It stores it as a *tree*, where every character is a node hanging off the character it was typed after (as a left or right child). The text you read is an *in-order walk* of that tree. This is the whole trick: two people typing at the same spot create two *branches* of the tree, not two rival claims on one string position, so merging them is just "sort the branches by id" — a fact, never a decision.
+- **In-order traversal:** the walk that turns the tree back into a sequence — left children (in id order), then the node itself (unless it is a tombstone), then right children (in id order). `traverse.ts` does this iteratively (never recursively — a forward-typed document is a chain as deep as it is long, and recursion would overflow the stack).
+- **Lamport clock / logical counter:** a per-replica counter used for *formatting* last-writer-wins, incremented on each format op — a stand-in for "which write is newer" that never reads wall-clock time, so a wrong system clock changes nothing. Ties break on `(lamport, replica, seq)`, a total order.
+- **LWW register (last-writer-wins):** a mark or block attribute (bold on/off, a heading level, a link's href) stored as "the value plus who wrote it and when (logically)"; when two writers race, the total order `(lamport, replica, seq)` decides deterministically, so every replica picks the same winner.
+- **Causal dependency / happens-before:** an op cannot be applied before the item it references exists (an insert needs its parent; a delete/format needs its target). `opDependencies` states this as data; `apply` *parks* an op in a pending buffer until its dependency arrives, then drains it. This is what lets ops arrive in any order and still converge.
+- **Replica id:** the permanent identity of one editing device/tab — 13 lowercase base32 chars, fixed length so lexicographic string order is the same order every replica uses to sort siblings. Half of every item's `(replica, counter)` id.
+- **Fenwick tree (binary indexed tree):** the data structure behind the editor's `PositionIndex`; it answers "how many visible characters are before this one?" and "what id is at visible offset N?" in O(log n), so a keystroke into a 50,000-character document costs a logarithmic update, not a full re-traversal.
+- **Mirror / editor binding:** the binding (`plugin.ts`) keeps the ProseMirror editor and the CRDT saying the same thing. The *mirror* is the CRDT state the editor was showing when you typed; after every change the editor is compared against the CRDT's normal form (invariant I7) and quietly corrected if they drift — a text difference is a reported bug, because the CRDT is what is persisted and shared.
+- **ProseMirror:** the rich-text editor framework Weft uses for the view, schema, and transactions. Every toolbar button runs the *same* `prosemirror-commands` command its keyboard shortcut runs, so a click and a keystroke produce one identical CRDT op.
+- **IndexedDB:** the browser's built-in durable local database; Weft commits every op here *before* sending it, which is what makes "on this device" a real guarantee that survives a tab close or crash.
+- **JSONL append log:** the server's durability format — one JSON op per line, appended and `fsync`'d per batch, one file per document. On restart the server rebuilds its state vector from the file, never trusting memory, and tolerates exactly one kind of damage (a torn last line from a crash).
+- **Snapshot / compaction:** to bound startup and storage, the client periodically serializes the current tree (tombstone text stripped) as a *snapshot* and prunes the covered *foreign* ops from IndexedDB in one transaction (own ops are never pruned). Decoding a snapshot yields a Doc with identical canonical bytes, state vector, and pending set.
+- **Property-based testing (fast-check):** instead of hand-picked examples, the test generates *random* operation sequences and random arrival orders and asserts the invariants (convergence, no-loss, canonicalization) hold every time — the right shape of test for a commutativity property, and the reason a from-scratch CRDT is defensible.
+- **Anchor (cursor/presence):** a cursor position expressed as "after item X" (or "before, at index 0") rather than a numeric offset, so a peer's caret survives concurrent edits elsewhere in the document. Presence anchors are ephemeral and never part of the document CRDT.
+- **Rate limiting / slow-consumer cap:** the relay meters messages, ops, and presence per second (warn, then close), bounds each frame's size before parsing, and caps each socket's send queue so one stalled peer cannot hold everyone's fan-out in memory — the hostile-input hardening a public relay needs.
 
 ## CI, packaging, deployment, and rollback
 

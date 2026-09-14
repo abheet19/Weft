@@ -5,7 +5,7 @@ let serial = 0;
 const fresh = (label: string): string => `release-${label}-${Date.now().toString(36)}-${serial++}`;
 
 async function runCommand(page: Page, title: string): Promise<void> {
-  await page.getByRole('button', { name: 'Open command palette (Ctrl+K)' }).click();
+  await page.getByRole('button', { name: 'Open command palette (Ctrl+K)' }).first().click();
   const dialog = page.getByRole('dialog', { name: 'Command palette' });
   await expect(dialog).toBeVisible();
   await dialog.getByRole('combobox').fill(title);
@@ -32,7 +32,7 @@ test('every command-palette action is present and stateful actions produce visib
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await open(page, fresh('commands'));
 
-  await page.getByRole('button', { name: 'Open command palette (Ctrl+K)' }).click();
+  await page.getByRole('button', { name: 'Open command palette (Ctrl+K)' }).first().click();
   const dialog = page.getByRole('dialog', { name: 'Command palette' });
   await expect(dialog.getByRole('option')).toHaveCount(16);
   for (const title of [
@@ -99,6 +99,7 @@ test('every command-palette action is present and stateful actions produce visib
   await expect(page.getByRole('tab', { name: 'Outline' })).toBeVisible();
 
   await runCommand(page, 'Copy state vector');
+  await expect(page.getByText('Copied the state vector to your clipboard.')).toBeVisible();
   const clipboard = await page.evaluate(() => navigator.clipboard.readText());
   expect(() => JSON.parse(clipboard) as unknown).not.toThrow();
 

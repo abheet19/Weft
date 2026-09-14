@@ -177,6 +177,7 @@ export function SettingsScreen({ theme, onTheme, flat, onFlat, accent, onAccent,
 function DebugSection({ doc }: Pick<SettingsScreenProps, 'doc'>): React.JSX.Element {
   const [dropN, setDropN] = useState(3);
   const [delayed, setDelayed] = useState(false);
+  const [copyResult, setCopyResult] = useState<'idle' | 'copied' | 'failed'>('idle');
   if (doc === null) {
     return (
       <>
@@ -200,6 +201,16 @@ function DebugSection({ doc }: Pick<SettingsScreenProps, 'doc'>): React.JSX.Elem
     if (snapshot.hash === null) return;
     const bad = (snapshot.hash[0] === 'f' ? '0' : 'f') + snapshot.hash.slice(1);
     session.runner.receivePresence(PHANTOM, { name: 'phantom', color: 2, hash: bad, sv: snapshot.sv });
+  };
+  const copyStateVector = (): void => {
+    if (navigator.clipboard === undefined) {
+      setCopyResult('failed');
+      return;
+    }
+    void navigator.clipboard.writeText(JSON.stringify(snapshot.sv)).then(
+      () => setCopyResult('copied'),
+      () => setCopyResult('failed'),
+    );
   };
   return (
     <>
@@ -251,8 +262,8 @@ function DebugSection({ doc }: Pick<SettingsScreenProps, 'doc'>): React.JSX.Elem
         <span>
           State vector<span className="desc">This replica’s op counts, for a bug report</span>
         </span>
-        <button type="button" className="btn" onClick={() => void navigator.clipboard?.writeText(JSON.stringify(snapshot.sv)).catch(() => undefined)}>
-          Copy to clipboard
+        <button type="button" className="btn" onClick={copyStateVector}>
+          {copyResult === 'copied' ? 'Copied state vector' : copyResult === 'failed' ? 'Copy failed' : 'Copy state vector'}
         </button>
       </div>
     </section>

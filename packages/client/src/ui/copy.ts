@@ -48,6 +48,8 @@ export const NOTICE = {
   merged: (n: number): string => `Back online — ${n} offline edits merged.`,
   showInInspector: 'Open sidebar',
   startedFresh: (from: string): string => `Started fresh. The previous document is kept on this device as weft:${from}.`,
+  copiedStateVector: 'Copied the state vector to your clipboard.',
+  stateVectorCopyFailed: 'Couldn’t copy the state vector. Your browser denied clipboard access.',
 } as const;
 
 export const CARD = { retry: 'Retry', startFresh: 'Start fresh (keeps a copy)', empty: 'Start writing, or press ⌘K' } as const;

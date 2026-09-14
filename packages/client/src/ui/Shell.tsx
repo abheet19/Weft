@@ -173,6 +173,16 @@ export function Shell({ url, docId, screen = 'editor', onNavigate, theme, flat, 
     void navigator.clipboard?.writeText(divergenceReport(docId, ready.snapshot.diverged)).catch(() => undefined);
     ready.session.runner.dismissDivergence();
   };
+  const copyStateVector = (): void => {
+    if (ready === null || navigator.clipboard === undefined) {
+      show({ id: 'copy-state-vector', hue: 'bad', icon: 'alert', text: NOTICE.stateVectorCopyFailed, role: 'alert' });
+      return;
+    }
+    void navigator.clipboard.writeText(JSON.stringify(ready.snapshot.sv)).then(
+      () => show({ id: 'copy-state-vector', hue: 'ok', icon: 'check', text: NOTICE.copiedStateVector, role: 'status' }),
+      () => show({ id: 'copy-state-vector', hue: 'bad', icon: 'alert', text: NOTICE.stateVectorCopyFailed, role: 'alert' }),
+    );
+  };
   const goto = useCallback((next: Screen) => onNavigate?.(next), [onNavigate]);
   /** Editing the title is renaming the document's first heading — Weft has no separate title op (the
       artifact's editable title, given honest semantics). Clicking the title field focuses it. */
@@ -227,7 +237,7 @@ export function Shell({ url, docId, screen = 'editor', onNavigate, theme, flat, 
             ready.session.runner.dropNext(3);
           },
           toggleInspector: () => setRailOpen((o) => !o),
-          copyStateVector: () => void navigator.clipboard?.writeText(JSON.stringify(ready.snapshot.sv)).catch(() => undefined),
+          copyStateVector,
         });
 
   const topbar = (
@@ -387,4 +397,3 @@ export function Shell({ url, docId, screen = 'editor', onNavigate, theme, flat, 
     </>
   );
 }
-

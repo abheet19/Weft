@@ -28,6 +28,7 @@ test('F-presence: two tabs on one doc see each other as a peer avatar and a name
   await pageA.keyboard.type('hello from A');
   await expect(pageB.locator('.rcaret')).toHaveCount(1);
   await expect(pageB.locator('.rcaret .flag').first()).toHaveText(/.+/); // the caret is named
+  await expect(pageB.locator('.rcaret')).toHaveCSS('pointer-events', 'none');
   await Promise.all([a.close(), b.close()]);
 });
 

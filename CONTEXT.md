@@ -126,8 +126,8 @@ The container supervises the loopback WebSocket relay and Caddy as one process u
 | --- | --- |
 | 647 distinct Vitest cases passed: client 344, client latency 4, CRDT 164, protocol 52, server 83 | `npm run check`, 15 September 2026 |
 | Coverage passed: client 96.36% statements / 93.91% branches / 92.85% functions; CRDT 99.61 / 96.50 / 100; protocol 100 / 99.19 / 100; server 95.29 / 92.83 / 97.53 | configured package coverage gates |
-| Full candidate browser matrix: 42 Chromium cases, including 320 px plus tablet/laptop/wide shell checks | `packages/client/e2e`, real ephemeral relay + production Vite build |
-| Live `8cee8ee` browser matrix: all 39 tests present in that deployed revision passed; exact-SHA smoke passed. The live Documents screen lacks a `main` landmark; fixed only in the local candidate. | public Chromium run, 15 September 2026 |
+| Full candidate browser matrix: 43 Chromium cases, including 320 px Settings plus tablet/laptop/wide shell checks and non-intercepting remote carets | `packages/client/e2e`, real ephemeral relay + production Vite build |
+| Fresh public release sweep: every available public CTA group, exact CRDT convergence, open-session offline/reconnect, release identity and four viewport checks passed; the current SHA is read from `/health.release` and recorded in external release evidence rather than duplicated here. | public Chromium run, 16 September 2026 |
 | Focused release matrix: all 12 palette commands; every toolbar/block/link/notice/recovery CTA; collaboration/offline/reconnect/diagnostics; desktop and 320 px | `packages/client/e2e/release-cta.spec.ts` |
 | 100k benchmark gate passed; measured connected replay 274.6 ms, concurrent replay 373.5 ms, index 149.7 ms, snapshot 371.8 ms, JSON 155.3 ms, sibling flood 404.1 ms, peak heap 208.6 MB | Node 22.22.0 on this Windows machine; bounded synthetic run |
 | Earlier bounded Lighthouse mobile run measured 98 performance, 100 accessibility, 100 SEO, 2.0 s FCP/LCP, 0 ms TBT, and 0.012 CLS | retained lab evidence in `docs/VERIFICATION.md`; not field data |

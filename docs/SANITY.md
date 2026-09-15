@@ -1,6 +1,6 @@
 # Weft sanity, usage, and release plan
 
-> Snapshot updated 15 September 2026 IST. Use disposable document IDs and synthetic content. Public Weft has no account, permission, privacy, or E2EE boundary. Live revision `8cee8ee24f9c8cf969ce3fe93eabd65658b8385a` passed its complete 39-test browser suite; the local candidate adds a missing Documents `main` landmark and three viewport checks and is not yet deployed.
+> Snapshot updated 16 September 2026 IST. Use disposable document IDs and synthetic content. Public Weft has no account, permission, privacy, or E2EE boundary. Read the mutable release identity from `/health.release` and pair it with the external sign-off; do not infer deployment from this source document.
 
 ## Automated gate
 
@@ -11,7 +11,7 @@ npm run docs:check
 npm run check
 ```
 
-The current candidate matrix expects 14 documentation checks, 647 distinct Vitest cases, the deterministic 100,000-operation benchmark, and 42 Chromium Playwright cases. Husky runs lint and typecheck before commit; GitHub CI repeats the full gate on Windows and Linux.
+The current candidate matrix expects 14 documentation checks, 647 distinct Vitest cases, the deterministic 100,000-operation benchmark, and 43 Chromium Playwright cases. Husky runs lint and typecheck before commit; GitHub CI repeats the full gate on Windows and Linux.
 
 ## Product walkthrough
 

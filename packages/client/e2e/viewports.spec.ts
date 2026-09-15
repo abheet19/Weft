@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { base, editor, pill } from './helpers.ts';
 
 const VIEWPORTS = [
+  { label: 'phone', width: 320, height: 844 },
   { label: 'tablet', width: 768, height: 1024 },
   { label: 'laptop', width: 1366, height: 768 },
   { label: 'wide', width: 1920, height: 1080 },

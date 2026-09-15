@@ -160,7 +160,7 @@ h1, h2, h3, p { margin: 0 }
 /* Changed from the prototype: carets are absolutely positioned inside .editor-wrap (S6's positioned wrapper),
    not the prototype's .page; the selection box is a positioned .rsel-box the overlay lays out, since the CRDT
    text has no static markup to wrap. */
-.rcaret { position: absolute; width: 2px; border-radius: 1px; background: var(--hue); z-index: 2;
+.rcaret { position: absolute; width: 2px; border-radius: 1px; background: var(--hue); z-index: 2; pointer-events: none;
   transition: left var(--t-base) var(--ease), top var(--t-base) var(--ease), height var(--t-base) var(--ease), opacity var(--t-slow) }
 .rcaret::after { content: ""; position: absolute; inset: -4px -6px } /* hover target */
 .rcaret.idle { opacity: .4 }
@@ -682,7 +682,7 @@ kbd { font: 500 11px/1 var(--font-mono); padding: 3px 5px; border-radius: 5px; b
 
 /* ---- Settings — wider nav column with the artifact's item metrics; sentence-case white group
    headers (not uppercase eyebrows); roomier glass groups; bolder row labels. ---- */
-.settings-layout { grid-template-columns: 220px 1fr }
+@media (min-width: 761px) { .settings-layout { grid-template-columns: 220px 1fr } }
 .settings-nav button { padding: 10px 12px; border-radius: 10px; font-size: .86rem }
 .settings-body .panel { padding: 18px 20px }
 .settings-body .panel-h { margin-bottom: 14px }

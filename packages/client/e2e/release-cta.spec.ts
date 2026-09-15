@@ -309,7 +309,17 @@ for (const viewport of [
 
     await page.locator('.pill button').click();
     await expect(page.getByRole('dialog', { name: 'Sync details' })).toBeVisible();
-    await page.keyboard.press('Escape');
+    if (viewport.width <= 320) {
+      const triggerBox = await page.locator('.pill button').boundingBox();
+      const dialogBox = await page.getByRole('dialog', { name: 'Sync details' }).boundingBox();
+      expect(triggerBox).not.toBeNull();
+      expect(dialogBox).not.toBeNull();
+      expect(dialogBox!.y + dialogBox!.height).toBeLessThanOrEqual(triggerBox!.y);
+      await page.locator('.pill button').click();
+    } else {
+      await page.keyboard.press('Escape');
+    }
+    await expect(page.getByRole('dialog', { name: 'Sync details' })).toHaveCount(0);
 
     const before = page.url();
     const home =

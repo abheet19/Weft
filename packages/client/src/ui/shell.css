@@ -435,6 +435,9 @@ kbd { font: 500 11px/1 var(--font-mono); padding: 3px 5px; border-radius: 5px; b
   .navrail-items { flex-direction: row; justify-content: space-around }
   .navrail-btn { width: auto; flex: 1 1 0; padding: 6px 2px }
   .pill { left: 20px; bottom: 72px } /* rail is a bottom bar here, not a left column — clear it instead */
+  /* The bottom navigation moves the status pill up on phones. Move its details card by the same
+     amount, and keep it inside the viewport, so the card never covers the trigger used to close it. */
+  #pop-pill { left: 12px; bottom: 118px; width: calc(100vw - 24px) }
 }
 
 /* ---------- 23. FULL-PAGE SCREENS (redesign) — shared chrome for Documents/History/Settings ---------- */

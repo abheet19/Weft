@@ -84,6 +84,7 @@ test('Documents: the empty state offers New document when nothing has been opene
   // Forget every entry this fresh context's own load just created, to reach the true empty state.
   await navTab(page, 'Documents').click();
   for (const btn of await page.locator('.doc-card-forget').all()) await btn.click({ force: true });
+  await expect(page.getByRole('main', { name: 'Documents' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Nothing opened yet on this device' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'New document' }).first()).toBeVisible();
 });

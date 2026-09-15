@@ -1,4 +1,4 @@
-# Weft verification and release evidence — 2026-09-10
+# Weft verification and release evidence — updated 2026-09-15
 
 Weft's release claim is narrow: anonymous collaborators can edit one document online and offline, reconnect without a conflict dialog, and see honest local-versus-durable save state. All checks use disposable data.
 
@@ -6,14 +6,14 @@ Weft's release claim is narrow: anonymous collaborators can edit one document on
 
 `npm run docs:check` and `npm run check` are the reproducible release commands. On Node 22.22.0 for the current candidate they pass:
 
-- 13 repository documents with every relative link resolved;
+- 14 repository documents with every relative link resolved;
 - TypeScript checks in all four workspaces;
 - ESLint, package-direction checks, and purity checks across 34 pure source files;
-- 613 distinct Vitest cases: client 310, client latency 4, CRDT 164, protocol 52, and server 83;
-- coverage gates (client 96.44% statements / 94.02% branches / 92.60% functions; CRDT 99.61 / 96.50 / 100; protocol 100 / 99.19 / 100; server 95.29 / 92.83 / 97.53);
-- 33 Chromium Playwright cases against a production Vite build and a real ephemeral relay.
+- 647 distinct Vitest cases: client 344, client latency 4, CRDT 164, protocol 52, and server 83;
+- coverage gates (client 96.36% statements / 93.91% branches / 92.85% functions; CRDT 99.61 / 96.50 / 100; protocol 100 / 99.19 / 100; server 95.29 / 92.83 / 97.53);
+- 42 Chromium Playwright cases against a production Vite build and a real ephemeral relay, including tablet/laptop/wide shell checks.
 
-The CRDT suite runs once with coverage and once without it; the repeated execution is not counted twice. The focused `release-cta.spec.ts` has five cases and covers every available release CTA at desktop and 320 px, plus corrupt-store recovery.
+The CRDT suite runs once with coverage and once without it; the repeated execution is not counted twice. The focused `release-cta.spec.ts` covers every available release CTA at desktop and 320 px, plus corrupt-store recovery. The 15 September public run executed all 39 tests present in the deployed revision against `https://weft-abheet.fly.dev`; every test passed in 2.1 minutes. A separate exact-SHA smoke also passed health, two-peer convergence, offline merge, reconnect actions, the palette and 320 px shell with zero page errors. The additional viewport audit found that the live Documents screen lacked a `main` landmark. The local candidate changes its existing wrapper to `<main>` and adds the landmark plus tablet/laptop/wide regression checks; the complete local gate above passes, including the landmark assertion and three viewport cases. Those candidate bytes are not deployed.
 
 ## User-flow coverage
 
@@ -34,7 +34,7 @@ There is no import/export CTA in this version. Accounts, document authorization,
 
 ## Performance snapshot
 
-The deterministic benchmark generated and replayed 100,000-operation connected, partitioned, and sibling-flood workloads. It measured connected replay 358.3 ms, concurrent replay 597.2 ms, index construction 142.3 ms, snapshot encode/decode 426.0 ms, JSON stringify/parse 161.7 ms, sibling flood 523.0 ms, and peak observed heap 207.7 MB. Every result met its direct target and the repository's enforced release ceiling.
+The deterministic benchmark generated and replayed 100,000-operation connected, partitioned, and sibling-flood workloads. It measured connected replay 274.6 ms, concurrent replay 373.5 ms, index construction 149.7 ms, snapshot encode/decode 371.8 ms, JSON stringify/parse 155.3 ms, sibling flood 404.1 ms, and peak observed heap 208.6 MB. Every result met its direct target and the repository's enforced release ceiling.
 
 Earlier mobile Lighthouse lab evidence for the same application path measured 98 performance, 100 accessibility, 100 SEO, 2.0 s FCP/LCP, 0 ms TBT, and 0.012 CLS. It is retained evidence, not a fresh field Core Web Vitals percentile. Automated accessibility checks do not constitute third-party WCAG certification or cover every browser, screen reader, switch device, zoom level, or OS combination.
 

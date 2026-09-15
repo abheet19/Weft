@@ -124,11 +124,12 @@ The container supervises the loopback WebSocket relay and Caddy as one process u
 
 | Result | Evidence |
 | --- | --- |
-| 613 distinct Vitest cases passed: client 310, client latency 4, CRDT 164, protocol 52, server 83 | `npm run check`, 10 September 2026 |
-| Coverage passed: client 96.44% statements / 94.02% branches / 92.60% functions; CRDT 99.61 / 96.50 / 100; protocol 100 / 99.19 / 100; server 95.29 / 92.83 / 97.53 | configured package coverage gates |
-| Full browser matrix: 33 Chromium cases after the release CTA/recovery test was added | `packages/client/e2e`, real ephemeral relay + production Vite build |
+| 647 distinct Vitest cases passed: client 344, client latency 4, CRDT 164, protocol 52, server 83 | `npm run check`, 15 September 2026 |
+| Coverage passed: client 96.36% statements / 93.91% branches / 92.85% functions; CRDT 99.61 / 96.50 / 100; protocol 100 / 99.19 / 100; server 95.29 / 92.83 / 97.53 | configured package coverage gates |
+| Full candidate browser matrix: 42 Chromium cases, including 320 px plus tablet/laptop/wide shell checks | `packages/client/e2e`, real ephemeral relay + production Vite build |
+| Live `8cee8ee` browser matrix: all 39 tests present in that deployed revision passed; exact-SHA smoke passed. The live Documents screen lacks a `main` landmark; fixed only in the local candidate. | public Chromium run, 15 September 2026 |
 | Focused release matrix: all 12 palette commands; every toolbar/block/link/notice/recovery CTA; collaboration/offline/reconnect/diagnostics; desktop and 320 px | `packages/client/e2e/release-cta.spec.ts` |
-| 100k benchmark gate passed; measured connected replay 358.3 ms, concurrent replay 597.2 ms, index 142.3 ms, snapshot 426.0 ms, JSON 161.7 ms, sibling flood 523.0 ms, peak heap 207.7 MB | Node 22.22.0 on this Windows machine; bounded synthetic run |
+| 100k benchmark gate passed; measured connected replay 274.6 ms, concurrent replay 373.5 ms, index 149.7 ms, snapshot 371.8 ms, JSON 155.3 ms, sibling flood 404.1 ms, peak heap 208.6 MB | Node 22.22.0 on this Windows machine; bounded synthetic run |
 | Earlier bounded Lighthouse mobile run measured 98 performance, 100 accessibility, 100 SEO, 2.0 s FCP/LCP, 0 ms TBT, and 0.012 CLS | retained lab evidence in `docs/VERIFICATION.md`; not field data |
 
 The final external release record under `verification-work/portfolio-release-20260910` names the exact commit, workflow, image/release, `/health` response, and public browser smoke. Metrics above describe the named local run and are not public capacity or certification claims.

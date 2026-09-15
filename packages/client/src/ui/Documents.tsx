@@ -44,7 +44,7 @@ export function Documents(): React.JSX.Element {
   };
 
   return (
-    <div className="screenpage" aria-label="Documents">
+    <main className="screenpage" aria-label="Documents">
       <div className="docs-head">
         <div>
           <h1 className="screenpage-h">Documents</h1>
@@ -121,6 +121,6 @@ export function Documents(): React.JSX.Element {
           ))}
         </div>
       )}
-    </div>
+    </main>
   );
 }

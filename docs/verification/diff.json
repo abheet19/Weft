@@ -1,0 +1,455 @@
+{
+  "1280w": {
+    "rail.rail": [
+      "lineHeight: artifact=normal | live=24px"
+    ],
+    "rail.brand": [
+      "lineHeight: artifact=normal | live=24px"
+    ],
+    "rail.activeBtn": [
+      "color: artifact=rgb(139, 242, 229) | live=rgb(139, 243, 230)",
+      "lineHeight: artifact=normal | live=12.075px",
+      "height: artifact=57px | live=55.0625px",
+      "borderTopColor: artifact=oklab(0.819824 -0.134627 -0.0111365 / 0.297895) | live=oklch(0.819824 0.135087 184.729 / 0.3)",
+      "_h: artifact=57 | live=55"
+    ],
+    "rail.idleBtn": [
+      "lineHeight: artifact=normal | live=12.075px",
+      "height: artifact=57px | live=55.0625px",
+      "_h: artifact=57 | live=55"
+    ],
+    "doc.title": [
+      "fontFamily: artifact=Manrope, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif | live=Fraunces, Georgia, \"Times New Roman\", serif",
+      "lineHeight: artifact=normal | live=53.28px",
+      "width: artifact=466.906px | live=539.578px",
+      "height: artifact=49px | live=53.2656px",
+      "_w: artifact=467 | live=540",
+      "_h: artifact=49 | live=53"
+    ],
+    "doc.sub": [
+      "lineHeight: artifact=normal | live=22.816px",
+      "marginTop: artifact=6px | live=-8px",
+      "marginBottom: artifact=14.72px | live=0px",
+      "width: artifact=466.906px | live=539.578px",
+      "height: artifact=40px | live=68.4375px",
+      "_w: artifact=467 | live=540",
+      "_h: artifact=40 | live=68"
+    ],
+    "doc.primaryBtn": [
+      "lineHeight: artifact=normal | live=20.64px",
+      "boxShadow: artifact=color(srgb 0.203922 0.878431 0.811765 / 0.6) 0px 10px 24px -12px | live=oklch(0.819824 0.135087 184.729 / 0.6) 0px 10px 24px -12px",
+      "width: artifact=157.109px | live=155.672px",
+      "height: artifact=41px | live=42.6406px",
+      "_w: artifact=157 | live=156",
+      "_h: artifact=41 | live=43"
+    ],
+    "doc.card": [
+      "backgroundColor: artifact=rgba(25, 32, 35, 0.6) | live=rgba(24, 31, 34, 0.6)",
+      "fontSize: artifact=13.3333px | live=16px",
+      "lineHeight: artifact=normal | live=24px",
+      "width: artifact=356px | live=398px",
+      "height: artifact=223.391px | live=173.797px",
+      "borderTopColor: artifact=rgba(254, 254, 254, 0.09) | live=rgba(255, 255, 255, 0.09)",
+      "_w: artifact=356 | live=398",
+      "_h: artifact=223 | live=174"
+    ],
+    "doc.cardIcon": [
+      "fontSize: artifact=13.3333px | live=16px",
+      "lineHeight: artifact=normal | live=24px"
+    ],
+    "doc.cardH3": [
+      "paddingRight: artifact=0px | live=24px",
+      "width: artifact=318px | live=360px",
+      "_w: artifact=318 | live=360"
+    ],
+    "doc.count": [
+      "lineHeight: artifact=normal | live=18.72px",
+      "width: artifact=82.375px | live=41.2031px",
+      "height: artifact=17px | live=18.7188px",
+      "_w: artifact=82 | live=41",
+      "_h: artifact=17 | live=19"
+    ],
+    "doc.empty": [
+      "lineHeight: artifact=normal | live=24px",
+      "marginTop: artifact=10px | live=0px",
+      "marginBottom: artifact=40px | live=0px",
+      "width: artifact=1100px | live=812px",
+      "height: artifact=319.156px | live=295.828px",
+      "_w: artifact=1100 | live=812",
+      "_h: artifact=319 | live=296"
+    ],
+    "doc.emptyH": [
+      "fontFamily: artifact=Manrope, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif | live=Fraunces, Georgia, \"Times New Roman\", serif",
+      "lineHeight: artifact=normal | live=27.6px",
+      "width: artifact=318.422px | live=351.047px",
+      "height: artifact=26px | live=27.6094px",
+      "_w: artifact=318 | live=351",
+      "_h: artifact=26 | live=28"
+    ],
+    "doc.emptyP": [
+      "lineHeight: artifact=normal | live=21.12px",
+      "marginTop: artifact=14.08px | live=0px",
+      "marginBottom: artifact=14.08px | live=0px",
+      "width: artifact=326.359px | live=318.766px",
+      "height: artifact=38px | live=42.2188px",
+      "_w: artifact=326 | live=319",
+      "_h: artifact=38 | live=42"
+    ],
+    "hist.title": [
+      "fontFamily: artifact=Manrope, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif | live=Fraunces, Georgia, \"Times New Roman\", serif",
+      "lineHeight: artifact=normal | live=40.8px",
+      "width: artifact=1100px | live=812px",
+      "height: artifact=37px | live=40.7969px",
+      "_w: artifact=1100 | live=812",
+      "_h: artifact=37 | live=41"
+    ],
+    "hist.sub": [
+      "fontSize: artifact=14.08px | live=14.72px",
+      "lineHeight: artifact=normal | live=22.816px",
+      "marginTop: artifact=6px | live=-8px",
+      "marginBottom: artifact=14.08px | live=0px",
+      "width: artifact=515.312px | live=539.578px",
+      "height: artifact=38px | live=45.625px",
+      "_w: artifact=515 | live=540",
+      "_h: artifact=38 | live=46"
+    ],
+    "hist.preview": [
+      "lineHeight: artifact=normal | live=24px",
+      "width: artifact=852px | live=812px",
+      "height: artifact=301.328px | live=281.25px",
+      "_w: artifact=852 | live=812",
+      "_h: artifact=301 | live=281"
+    ],
+    "hist.restore": [
+      "lineHeight: artifact=normal | live=24px",
+      "width: artifact=852px | live=812px",
+      "height: artifact=114.594px | live=73.5px",
+      "_w: artifact=852 | live=812",
+      "_h: artifact=115 | live=74"
+    ],
+    "hist.restoreBtn": "LIVE-MISSING",
+    "set.title": [
+      "fontFamily: artifact=Manrope, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif | live=Fraunces, Georgia, \"Times New Roman\", serif",
+      "lineHeight: artifact=normal | live=40.8px",
+      "width: artifact=1100px | live=812px",
+      "height: artifact=37px | live=40.7969px",
+      "_w: artifact=1100 | live=812",
+      "_h: artifact=37 | live=41"
+    ],
+    "set.navActive": [
+      "lineHeight: artifact=normal | live=20.64px",
+      "marginBottom: artifact=2px | live=0px",
+      "width: artifact=195px | live=220px",
+      "height: artifact=39px | live=40.6406px",
+      "_w: artifact=195 | live=220",
+      "_h: artifact=39 | live=41"
+    ],
+    "set.navIdle": [
+      "lineHeight: artifact=normal | live=20.64px",
+      "marginBottom: artifact=2px | live=0px",
+      "width: artifact=195px | live=220px",
+      "height: artifact=39px | live=40.6406px",
+      "_w: artifact=195 | live=220",
+      "_h: artifact=39 | live=41"
+    ],
+    "set.group": [
+      "lineHeight: artifact=normal | live=24px",
+      "width: artifact=560px | live=572px",
+      "height: artifact=241px | live=257.75px",
+      "_w: artifact=560 | live=572",
+      "_h: artifact=241 | live=258"
+    ],
+    "set.groupH3": [
+      "lineHeight: artifact=normal | live=22.08px",
+      "marginBottom: artifact=14px | live=0px",
+      "width: artifact=518px | live=78.125px",
+      "height: artifact=20px | live=22.0781px",
+      "_w: artifact=518 | live=78",
+      "_h: artifact=20 | live=22"
+    ],
+    "set.fieldRow": [
+      "fontSize: artifact=16px | live=13.76px",
+      "lineHeight: artifact=normal | live=20.64px",
+      "paddingTop: artifact=9px | live=12px",
+      "paddingBottom: artifact=9px | live=12px",
+      "width: artifact=auto | live=530px",
+      "height: artifact=auto | live=64.8906px",
+      "borderBottomWidth: artifact=0px | live=1px",
+      "_w: artifact=0 | live=530",
+      "_h: artifact=0 | live=65"
+    ],
+    "set.segmented": [
+      "fontSize: artifact=16px | live=13.76px",
+      "lineHeight: artifact=normal | live=20.64px",
+      "width: artifact=171.375px | live=182.344px",
+      "height: artifact=38px | live=39.1875px",
+      "_w: artifact=171 | live=182",
+      "_h: artifact=38 | live=39"
+    ],
+    "set.segActive": [
+      "lineHeight: artifact=normal | live=19.2px",
+      "width: artifact=87.7969px | live=66.9688px",
+      "height: artifact=30px | live=31.1875px",
+      "_w: artifact=88 | live=67",
+      "_h: artifact=30 | live=31"
+    ],
+    "set.sw": [
+      "fontSize: artifact=13.3333px | live=13.76px",
+      "lineHeight: artifact=normal | live=20.64px",
+      "paddingTop: artifact=1px | live=0px",
+      "paddingRight: artifact=6px | live=0px",
+      "paddingBottom: artifact=1px | live=0px",
+      "paddingLeft: artifact=6px | live=0px",
+      "borderRadius: artifact=99px | live=999px",
+      "height: artifact=21px | live=20px",
+      "_w: artifact=0 | live=36",
+      "_h: artifact=0 | live=20"
+    ],
+    "set.swatch": [
+      "fontSize: artifact=13.3333px | live=13.76px",
+      "lineHeight: artifact=normal | live=20.64px",
+      "paddingTop: artifact=1px | live=0px",
+      "paddingRight: artifact=6px | live=0px",
+      "paddingBottom: artifact=1px | live=0px",
+      "paddingLeft: artifact=6px | live=0px",
+      "_w: artifact=0 | live=30",
+      "_h: artifact=0 | live=30"
+    ]
+  },
+  "375w": {
+    "rail.rail": [
+      "fontSize: artifact=16px | live=14.4px",
+      "lineHeight: artifact=normal | live=21.6px",
+      "width: artifact=64px | live=84px",
+      "height: artifact=812px | live=86.0625px",
+      "borderTopWidth: artifact=0px | live=1px",
+      "borderTopColor: artifact=rgb(234, 243, 242) | live=rgba(255, 255, 255, 0.09)",
+      "_w: artifact=64 | live=84",
+      "_h: artifact=812 | live=86"
+    ],
+    "rail.brand": [
+      "fontSize: artifact=16px | live=14.4px",
+      "lineHeight: artifact=normal | live=21.6px",
+      "_w: artifact=44 | live=0",
+      "_h: artifact=44 | live=0"
+    ],
+    "rail.activeBtn": [
+      "fontSize: artifact=9px | live=10.5px",
+      "lineHeight: artifact=normal | live=12.075px",
+      "letterSpacing: artifact=0.18px | live=0.21px",
+      "width: artifact=52px | live=50.2969px",
+      "height: artifact=56px | live=55.0625px",
+      "borderTopColor: artifact=color(srgb 0.203922 0.878431 0.811765 / 0.3) | live=oklch(0.819824 0.135087 184.729 / 0.3)",
+      "_w: artifact=52 | live=50",
+      "_h: artifact=56 | live=55"
+    ],
+    "rail.idleBtn": [
+      "fontSize: artifact=9px | live=10.5px",
+      "lineHeight: artifact=normal | live=12.075px",
+      "letterSpacing: artifact=0.18px | live=0.21px",
+      "width: artifact=52px | live=64px",
+      "height: artifact=56px | live=55.0625px",
+      "_w: artifact=52 | live=64",
+      "_h: artifact=56 | live=55"
+    ],
+    "doc.title": [
+      "fontFamily: artifact=Manrope, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif | live=Fraunces, Georgia, \"Times New Roman\", serif",
+      "lineHeight: artifact=normal | live=40.8px",
+      "width: artifact=259px | live=327px",
+      "height: artifact=37px | live=40.7969px",
+      "_w: artifact=259 | live=327",
+      "_h: artifact=37 | live=41"
+    ],
+    "doc.sub": [
+      "lineHeight: artifact=normal | live=22.816px",
+      "marginTop: artifact=6px | live=-8px",
+      "marginBottom: artifact=14.72px | live=0px",
+      "width: artifact=259px | live=327px",
+      "height: artifact=80px | live=91.25px",
+      "_w: artifact=259 | live=327",
+      "_h: artifact=80 | live=91"
+    ],
+    "doc.primaryBtn": [
+      "lineHeight: artifact=normal | live=20.64px",
+      "boxShadow: artifact=color(srgb 0.203922 0.878431 0.811765 / 0.6) 0px 10px 24px -12px | live=oklch(0.819824 0.135087 184.729 / 0.6) 0px 10px 24px -12px",
+      "width: artifact=157.109px | live=155.672px",
+      "height: artifact=41px | live=42.6406px",
+      "_w: artifact=157 | live=156",
+      "_h: artifact=41 | live=43"
+    ],
+    "doc.card": [
+      "backgroundColor: artifact=rgba(25, 32, 35, 0.6) | live=rgba(24, 31, 34, 0.6)",
+      "fontSize: artifact=13.3333px | live=14.4px",
+      "lineHeight: artifact=normal | live=21.6px",
+      "width: artifact=259px | live=327px",
+      "height: artifact=263.875px | live=194.594px",
+      "borderTopColor: artifact=rgba(254, 254, 254, 0.09) | live=rgba(255, 255, 255, 0.09)",
+      "_w: artifact=259 | live=327",
+      "_h: artifact=264 | live=195"
+    ],
+    "doc.cardIcon": [
+      "fontSize: artifact=13.3333px | live=14.4px",
+      "lineHeight: artifact=normal | live=21.6px"
+    ],
+    "doc.cardH3": [
+      "paddingRight: artifact=0px | live=24px",
+      "width: artifact=221px | live=289px",
+      "_w: artifact=221 | live=289"
+    ],
+    "doc.count": [
+      "lineHeight: artifact=normal | live=18.72px",
+      "width: artifact=82.375px | live=41.2031px",
+      "height: artifact=17px | live=18.7188px",
+      "_w: artifact=82 | live=41",
+      "_h: artifact=17 | live=19"
+    ],
+    "doc.empty": [
+      "fontSize: artifact=16px | live=14.4px",
+      "lineHeight: artifact=normal | live=21.6px",
+      "marginTop: artifact=10px | live=0px",
+      "marginBottom: artifact=40px | live=0px",
+      "width: artifact=215px | live=327px",
+      "height: artifact=409.156px | live=323.438px",
+      "_w: artifact=215 | live=327",
+      "_h: artifact=409 | live=323"
+    ],
+    "doc.emptyH": [
+      "fontFamily: artifact=Manrope, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif | live=Fraunces, Georgia, \"Times New Roman\", serif",
+      "lineHeight: artifact=normal | live=27.6px",
+      "width: artifact=149px | live=261px",
+      "height: artifact=78px | live=55.2188px",
+      "_w: artifact=149 | live=261",
+      "_h: artifact=78 | live=55"
+    ],
+    "doc.emptyP": [
+      "lineHeight: artifact=normal | live=21.12px",
+      "marginTop: artifact=14.08px | live=0px",
+      "marginBottom: artifact=14.08px | live=0px",
+      "width: artifact=149px | live=261px",
+      "height: artifact=76px | live=42.2188px",
+      "_w: artifact=149 | live=261",
+      "_h: artifact=76 | live=42"
+    ],
+    "hist.title": [
+      "fontFamily: artifact=Manrope, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif | live=Fraunces, Georgia, \"Times New Roman\", serif",
+      "lineHeight: artifact=normal | live=40.8px",
+      "width: artifact=215px | live=327px",
+      "height: artifact=37px | live=40.7969px",
+      "_w: artifact=215 | live=327",
+      "_h: artifact=37 | live=41"
+    ],
+    "hist.sub": [
+      "fontSize: artifact=14.08px | live=14.72px",
+      "lineHeight: artifact=normal | live=22.816px",
+      "marginTop: artifact=6px | live=-8px",
+      "marginBottom: artifact=14.08px | live=0px",
+      "width: artifact=215px | live=327px",
+      "height: artifact=95px | live=91.25px",
+      "_w: artifact=215 | live=327",
+      "_h: artifact=95 | live=91"
+    ],
+    "hist.preview": [
+      "fontSize: artifact=16px | live=14.4px",
+      "lineHeight: artifact=normal | live=21.6px",
+      "width: artifact=227px | live=327px",
+      "height: artifact=527.141px | live=281.25px",
+      "_w: artifact=227 | live=327",
+      "_h: artifact=527 | live=281"
+    ],
+    "hist.restore": [
+      "fontSize: artifact=16px | live=14.4px",
+      "lineHeight: artifact=normal | live=21.6px",
+      "width: artifact=227px | live=327px",
+      "height: artifact=207.594px | live=109.5px",
+      "_w: artifact=227 | live=327",
+      "_h: artifact=208 | live=110"
+    ],
+    "hist.restoreBtn": "LIVE-MISSING",
+    "set.title": [
+      "fontFamily: artifact=Manrope, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif | live=Fraunces, Georgia, \"Times New Roman\", serif",
+      "lineHeight: artifact=normal | live=40.8px",
+      "width: artifact=215px | live=327px",
+      "height: artifact=37px | live=40.7969px",
+      "_w: artifact=215 | live=327",
+      "_h: artifact=37 | live=41"
+    ],
+    "set.navActive": [
+      "lineHeight: artifact=normal | live=20.64px",
+      "width: artifact=99.125px | live=122.406px",
+      "height: artifact=144px | live=40.6406px",
+      "_w: artifact=99 | live=122",
+      "_h: artifact=144 | live=41"
+    ],
+    "set.navIdle": [
+      "lineHeight: artifact=normal | live=20.64px",
+      "width: artifact=126.844px | live=132.734px",
+      "height: artifact=144px | live=40.6406px",
+      "_w: artifact=127 | live=133",
+      "_h: artifact=144 | live=41"
+    ],
+    "set.group": [
+      "fontSize: artifact=16px | live=14.4px",
+      "lineHeight: artifact=normal | live=21.6px",
+      "width: artifact=215px | live=87px",
+      "height: artifact=381px | live=537.141px",
+      "_w: artifact=215 | live=87",
+      "_h: artifact=381 | live=537"
+    ],
+    "set.groupH3": [
+      "lineHeight: artifact=normal | live=22.08px",
+      "marginBottom: artifact=14px | live=0px",
+      "width: artifact=173px | live=78.125px",
+      "height: artifact=20px | live=22.0781px",
+      "_w: artifact=173 | live=78",
+      "_h: artifact=20 | live=22"
+    ],
+    "set.fieldRow": [
+      "fontSize: artifact=16px | live=13.76px",
+      "lineHeight: artifact=normal | live=20.64px",
+      "paddingTop: artifact=9px | live=12px",
+      "paddingBottom: artifact=9px | live=12px",
+      "width: artifact=auto | live=45px",
+      "height: artifact=auto | live=168.391px",
+      "borderBottomWidth: artifact=0px | live=1px",
+      "_w: artifact=0 | live=45",
+      "_h: artifact=0 | live=168"
+    ],
+    "set.segmented": [
+      "fontSize: artifact=16px | live=13.76px",
+      "lineHeight: artifact=normal | live=20.64px",
+      "width: artifact=171.375px | live=182.344px",
+      "height: artifact=38px | live=39.1875px",
+      "_w: artifact=171 | live=182",
+      "_h: artifact=38 | live=39"
+    ],
+    "set.segActive": [
+      "lineHeight: artifact=normal | live=19.2px",
+      "width: artifact=87.7969px | live=66.9688px",
+      "height: artifact=30px | live=31.1875px",
+      "_w: artifact=88 | live=67",
+      "_h: artifact=30 | live=31"
+    ],
+    "set.sw": [
+      "fontSize: artifact=13.3333px | live=13.76px",
+      "lineHeight: artifact=normal | live=20.64px",
+      "paddingTop: artifact=1px | live=0px",
+      "paddingRight: artifact=6px | live=0px",
+      "paddingBottom: artifact=1px | live=0px",
+      "paddingLeft: artifact=6px | live=0px",
+      "borderRadius: artifact=99px | live=999px",
+      "height: artifact=21px | live=20px",
+      "_w: artifact=0 | live=36",
+      "_h: artifact=0 | live=20"
+    ],
+    "set.swatch": [
+      "fontSize: artifact=13.3333px | live=13.76px",
+      "lineHeight: artifact=normal | live=20.64px",
+      "paddingTop: artifact=1px | live=0px",
+      "paddingRight: artifact=6px | live=0px",
+      "paddingBottom: artifact=1px | live=0px",
+      "paddingLeft: artifact=6px | live=0px",
+      "_w: artifact=0 | live=30",
+      "_h: artifact=0 | live=30"
+    ]
+  }
+}
